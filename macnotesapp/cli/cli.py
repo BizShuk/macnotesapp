@@ -538,6 +538,47 @@ def remove_folder(folder_name, yes, account_name):
     click.echo(f"Deleted folder '{folder_name}' from {account_name}")
 
 
+@click.command(name="get")
+@click.argument("note_id", metavar="ID")
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["html", "plaintext", "markdown", "json"]),
+    default="markdown",
+    help="Output format (default: markdown)",
+)
+@click.option("--show", "-s", is_flag=True, help="Show note in Notes.app after getting.")
+def get_note(note_id, output_format, show):
+    """Get note content by ID.
+
+    Example: notes get x-coredata://.../IMAPNote/p87 --format markdown
+    """
+    notesapp = macnotesapp.NotesApp()
+    matching_notes = notesapp.notes(id=[note_id])
+    if not matching_notes:
+        click.echo(f"Error: Note '{note_id}' not found.", err=True)
+        sys.exit(1)
+    note = matching_notes[0]
+
+    if output_format == "json":
+        note_data = note.asdict()
+        note_data["creation_date"] = note_data["creation_date"].isoformat()
+        note_data["modification_date"] = note_data["modification_date"].isoformat()
+        print(json.dumps(note_data, indent=2))
+    else:
+        from .click_rich_echo import console
+        if output_format == "html":
+            print(note.body)
+        elif output_format == "plaintext":
+            print(note.plaintext)
+        else:  # markdown
+            console.print(Markdown(html2md(note.body)))
+
+    if show:
+        note.show()
+
+
 # Click CLI object & context settings
 class CLI_Obj:
     def __init__(self, debug=False, group=None):
@@ -565,7 +606,8 @@ def cli_main(ctx, debug):
 
 # add the commands to the main group
 for command in [accounts, add_note, cat_notes, config, list_notes, dump, help,
-                rename_note, delete_note, edit_note, move_note, make_folder, remove_folder]:
+                rename_note, delete_note, edit_note, move_note, make_folder, remove_folder,
+                get_note]:
     cli_main.add_command(command)
 
 
