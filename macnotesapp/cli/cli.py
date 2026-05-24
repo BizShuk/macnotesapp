@@ -233,7 +233,6 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
         body=[body_filter] if body_filter else None,
         text=[text_filter] if text_filter else None,
         accounts=[list(account_name)] if account_name else None,
-        folders=[list(folder_name)] if folder_name else None,
         password_protected=password_protected if password_protected else None,
     )
 
@@ -276,7 +275,11 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
 
     for i in range(len(noteslist)):
         note_id = truncate_id(noteslist.id[i])
-        folder = noteslist.folder[i] or "---"
+        folder = noteslist.folder[i] or ""
+        folder_parts = folder.split("/")
+        account = folder_parts[0] if folder_parts else ""
+        folder_name_only = folder_parts[-1] if len(folder_parts) > 1 else folder
+        folder_display = f"{account}/{folder_name_only}" if account else folder_name_only
         name = noteslist.name[i] or "---"
         mod_date = noteslist.modification_date[i].strftime("%Y-%m-%dT%H:%M") if noteslist.modification_date[i] else "---"
         pwd = "🔒" if noteslist.password_protected[i] else "-"
@@ -285,7 +288,7 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
         if len(name) > name_width - 2:
             name = name[:name_width-2] + ".."
 
-        print(f"{note_id:<{id_width}} {folder:<{folder_width}} {name:<{name_width}} {mod_date:<{date_width}} {pwd}")
+        print(f"{note_id:<{id_width}} {folder_display:<{folder_width}} {name:<{name_width}} {mod_date:<{date_width}} {pwd}")
 
 
 @click.command(name="cat")
