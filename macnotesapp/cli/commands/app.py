@@ -1,6 +1,8 @@
 """App subcommand for Notes.app control"""
 
 import click
+from applescript import ScriptError
+
 import macnotesapp
 from macnotesapp import __version__ as cli_version
 
@@ -18,8 +20,12 @@ def app_activate():
     Example: notes app activate
     """
     notesapp = macnotesapp.NotesApp()
-    notesapp.activate()
-    click.echo("Notes.app activated.")
+    try:
+        notesapp.activate()
+        click.echo("Notes.app activated.")
+    except ScriptError as e:
+        click.echo(f"Error activating Notes.app: {e}", err=True)
+        raise click.Abort() from e
 
 
 @app_group.command(name="quit")
@@ -29,8 +35,12 @@ def app_quit():
     Example: notes app quit
     """
     notesapp = macnotesapp.NotesApp()
-    notesapp.quit()
-    click.echo("Notes.app quit.")
+    try:
+        notesapp.quit()
+        click.echo("Notes.app quit.")
+    except ScriptError as e:
+        click.echo(f"Error quitting Notes.app: {e}", err=True)
+        raise click.Abort() from e
 
 
 @app_group.command(name="version")
