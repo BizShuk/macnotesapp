@@ -396,30 +396,22 @@ def dump(selected, no_body):
 
 
 @click.command(name="rename")
-@click.argument("old_name", metavar="OLD_NAME")
+@click.argument("note_id", metavar="ID")
 @click.argument("new_name", metavar="NEW_NAME")
-@click.option(
-    "--account",
-    "-a",
-    "account_name",
-    metavar="ACCOUNT",
-    type=str,
-    help="Account to search in.",
-)
-def rename_note(old_name, new_name, account_name):
-    """Rename a note.
+def rename_note(note_id, new_name):
+    """Rename a note by ID.
 
-    Example: notes rename "Old Title" "New Title"
+    Example: notes rename x-coredata://.../IMAPNote/p87 "New Title"
     """
     notes_app = macnotesapp.NotesApp()
-    matching_notes = notes_app.notes(name=[old_name], accounts=[account_name] if account_name else None)
+    matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
-        click.echo(f"Error: Note '{old_name}' not found.", err=True)
+        click.echo(f"Error: Note '{note_id}' not found.", err=True)
         sys.exit(1)
     note = matching_notes[0]
-    old = note.name
+    old_name = note.name
     note.name = new_name
-    click.echo(f"Renamed '{old}' -> '{new_name}'")
+    click.echo(f"Renamed '{old_name}' -> '{new_name}'")
 
 
 @click.command(name="delete")
