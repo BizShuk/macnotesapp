@@ -102,11 +102,11 @@ notes edit p87 --name "新標題"
 
 ### Output Formats
 
-| Format | Use Case |
-|--------|----------|
-| Default | Human-readable, tab-separated |
-| `--json` | LLM workflows, scripting |
-| `--id-only` | Shell pipelines |
+| Format      | Use Case                  |
+|-------------|---------------------------|
+| Default     | Human-readable, tab-separated |
+| `--json`    | LLM workflows, scripting  |
+| `--id-only` | Shell pipelines           |
 
 ### Exit Codes
 
