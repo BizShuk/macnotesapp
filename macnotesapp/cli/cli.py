@@ -31,6 +31,7 @@ from .cli_config import (
 from .cli_help import RichHelpCommand, help
 from .cli_param_types import URLType
 from .readable import get_readable_html
+from .commands.attach import attach_group
 
 # extra features to support for Markdown to HTML conversion with markdown2
 MARKDOWN_EXTRAS = ["fenced-code-blocks", "footnotes", "tables"]
@@ -639,7 +640,7 @@ def cli_main(ctx, debug):
 # add the commands to the main group
 for command in [accounts, add_note, cat_notes, config, list_notes, dump, help,
                 rename_note, delete_note, edit_note, move_note, make_folder, remove_folder,
-                get_note, selected_notes]:
+                get_note, selected_notes, attach_group]:
     cli_main.add_command(command)
 
 
