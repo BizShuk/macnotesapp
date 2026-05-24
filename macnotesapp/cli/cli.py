@@ -579,6 +579,38 @@ def get_note(note_id, output_format, show):
         note.show()
 
 
+@click.command(name="selected")
+@click.option("--json", "-j", "json_", is_flag=True, help="Output as JSON.")
+@click.option("--id-only", "-i", is_flag=True, help="Output only the note ID.")
+def selected_notes(json_, id_only):
+    """Get the note currently selected in Notes.app UI.
+
+    Example: notes selected --json
+    """
+    notesapp = macnotesapp.NotesApp()
+    notes = notesapp.selection
+    if not notes:
+        click.echo("No note selected.", err=True)
+        sys.exit(1)
+
+    if id_only:
+        for note in notes:
+            print(note.id)
+    elif json_:
+        import json
+        notes_list = []
+        for note in notes:
+            note_data = note.asdict()
+            note_data["creation_date"] = note_data["creation_date"].isoformat()
+            note_data["modification_date"] = note_data["modification_date"].isoformat()
+            notes_list.append(note_data)
+        print(json.dumps(notes_list, indent=2))
+    else:
+        # Default: human-readable, one line per note
+        for note in notes:
+            print(f"{note.id}\t{note.account}/{note.folder}\t{note.name}")
+
+
 # Click CLI object & context settings
 class CLI_Obj:
     def __init__(self, debug=False, group=None):
@@ -607,7 +639,7 @@ def cli_main(ctx, debug):
 # add the commands to the main group
 for command in [accounts, add_note, cat_notes, config, list_notes, dump, help,
                 rename_note, delete_note, edit_note, move_note, make_folder, remove_folder,
-                get_note]:
+                get_note, selected_notes]:
     cli_main.add_command(command)
 
 
