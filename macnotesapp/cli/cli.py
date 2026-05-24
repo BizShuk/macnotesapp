@@ -221,6 +221,44 @@ def truncate_id(note_id: str) -> str:
     return note_id
 
 
+def resolve_note_id(note_id: str) -> str:
+    """Resolve partial note ID to full ID.
+
+    If note_id is already a full x-coredata:// ID, return as-is.
+    If note_id is partial (e.g., 'p87' or 'IMAPNote/p87'), search all notes
+    and return the full ID if exactly one match is found.
+
+    Args:
+        note_id: Full or partial note ID
+
+    Returns:
+        Full note ID
+
+    Raises:
+        click.ClickException if no match or multiple matches found
+    """
+    # If it's already a full ID, return as-is
+    if note_id.startswith("x-coredata://"):
+        return note_id
+
+    # Otherwise, search for notes ending with the partial ID
+    notes_app = macnotesapp.NotesApp()
+    all_notes = notes_app.notes()
+
+    # Find notes where the ID ends with the given partial
+    matches = []
+    for note in all_notes:
+        if note.id.endswith(f"/{note_id}") or note.id.endswith(note_id):
+            matches.append(note.id)
+
+    if len(matches) == 0:
+        raise click.ClickException(f"No note found matching '{note_id}'")
+    elif len(matches) > 1:
+        raise click.ClickException(f"Multiple notes match '{note_id}': {len(matches)} found. Use full ID.")
+
+    return matches[0]
+
+
 @click.command(name="list")
 @click.option("--name", "-n", "name_filter", metavar="TEXT", type=str, help="Filter by name containing TEXT")
 @click.option("--body", "-b", "body_filter", metavar="TEXT", type=str, help="Filter by body containing TEXT")
@@ -359,7 +397,9 @@ def rename_note(note_id, new_name):
     """Rename a note by ID.
 
     Example: notes rename x-coredata://.../IMAPNote/p87 "New Title"
+    Example: notes rename p87 "New Title"
     """
+    note_id = resolve_note_id(note_id)
     notes_app = macnotesapp.NotesApp()
     matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
@@ -378,7 +418,9 @@ def delete_note(note_id, yes):
     """Delete a note by ID.
 
     Example: notes delete x-coredata://.../IMAPNote/p87 --yes
+    Example: notes delete p87 --yes
     """
+    note_id = resolve_note_id(note_id)
     notes_app = macnotesapp.NotesApp()
     matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
@@ -407,7 +449,9 @@ def edit_note(note_id, body, use_html, use_markdown, interactive):
 
     Example: notes edit x-coredata://.../IMAPNote/p87 --body "New content"
     Example: notes edit x-coredata://.../IMAPNote/p87 --edit
+    Example: notes edit p87 --body "New content"
     """
+    note_id = resolve_note_id(note_id)
     notes_app = macnotesapp.NotesApp()
     matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
@@ -464,7 +508,9 @@ def move_note(note_id, folder):
     """Move a note to a different folder by ID.
 
     Example: notes move x-coredata://.../IMAPNote/p87 --folder Archive
+    Example: notes move p87 --folder Archive
     """
+    note_id = resolve_note_id(note_id)
     notes_app = macnotesapp.NotesApp()
     matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
@@ -543,7 +589,9 @@ def get_note(note_id, output_format, show):
     """Get note content by ID.
 
     Example: notes get x-coredata://.../IMAPNote/p87 --format markdown
+    Example: notes get p87 --format markdown
     """
+    note_id = resolve_note_id(note_id)
     notesapp = macnotesapp.NotesApp()
     matching_notes = notesapp.notes(id=[note_id])
     if not matching_notes:
