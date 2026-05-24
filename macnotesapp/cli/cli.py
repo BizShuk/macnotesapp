@@ -547,12 +547,12 @@ def get_note(note_id, output_format, show):
         note_data["modification_date"] = note_data["modification_date"].isoformat()
         print(json.dumps(note_data, indent=2))
     else:
-        from .click_rich_echo import console
         if output_format == "html":
             print(note.body)
         elif output_format == "plaintext":
             print(note.plaintext)
         else:  # markdown
+            console = Console()
             console.print(Markdown(html2md(note.body)))
 
     if show:
