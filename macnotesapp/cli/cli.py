@@ -437,27 +437,19 @@ def delete_note(note_id, yes):
 
 
 @click.command(name="edit")
-@click.argument("note_name", metavar="NOTE_NAME")
+@click.argument("note_id", metavar="ID")
 @click.option("--body", "-b", help="Set body directly without opening editor.")
 @click.option("--html", "-h", "use_html", is_flag=True, help="Treat body as HTML.")
 @click.option("--markdown", "-m", "use_markdown", is_flag=True, help="Treat body as Markdown.")
-@click.option(
-    "--account",
-    "-a",
-    "account_name",
-    metavar="ACCOUNT",
-    type=str,
-    help="Account to search in.",
-)
-def edit_note(note_name, body, use_html, use_markdown, account_name):
-    """Edit an existing note's body.
+def edit_note(note_id, body, use_html, use_markdown):
+    """Edit a note's body by ID.
 
-    Example: notes edit "My Note" --body "New content"
+    Example: notes edit x-coredata://.../IMAPNote/p87 --body "New content"
     """
     notes_app = macnotesapp.NotesApp()
-    matching_notes = notes_app.notes(name=[note_name], accounts=[account_name] if account_name else None)
+    matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
-        click.echo(f"Error: Note '{note_name}' not found.", err=True)
+        click.echo(f"Error: Note '{note_id}' not found.", err=True)
         sys.exit(1)
     note = matching_notes[0]
     original_name = note.name
@@ -466,12 +458,11 @@ def edit_note(note_name, body, use_html, use_markdown, account_name):
         if use_markdown:
             body = markdown2.markdown(body, extras=MARKDOWN_EXTRAS)
         elif not use_html:
-            # Plain text - wrap in basic HTML
             body = f"<div>{body}</div>"
         note.body = body
         click.echo(f"Updated '{original_name}'")
     else:
-        # Open in editor
+        # Open in editor with markdown
         import tempfile
         config = ConfigSettings()
         settings = config.read()
@@ -479,20 +470,17 @@ def edit_note(note_name, body, use_html, use_markdown, account_name):
         if editor.startswith("$"):
             editor = os.environ.get(editor[1:], "vim")
 
-        # Export current content as markdown for editing
         current_md = html2md(note.body)
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write(current_md)
             temp_path = f.name
 
-        # Open editor
         result = os.system(f'{editor} "{temp_path}"')
         if result != 0:
             click.echo(f"Editor exited with error code {result}", err=True)
             os.unlink(temp_path)
             sys.exit(1)
 
-        # Read back and update
         with open(temp_path, "r") as f:
             new_content = f.read()
 
