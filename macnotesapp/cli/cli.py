@@ -56,6 +56,7 @@ def accounts(json_):
 
 @click.command(name="add", cls=RichHelpCommand)
 @click.option("--show", "-s", is_flag=True, help="Show note in Notes after adding.")
+@click.option("--json", "-j", "json_", is_flag=True, help="Output full note data as JSON.")
 @click.option("--file", "-F", required=False, type=click.File())
 @click.option("--url", "-u", required=False, type=URLType())
 @click.option("--html", "-h", is_flag=True, help="Use HTML for body of note.")
@@ -87,7 +88,7 @@ def accounts(json_):
 )
 @click.argument("note", metavar="NOTE", required=False, default="")
 def add_note(
-    show, file, url, html, markdown, plaintext, edit, account_name, folder_name, note
+    show, json_, file, url, html, markdown, plaintext, edit, account_name, folder_name, note
 ):
     """Add new note.
 
@@ -124,6 +125,7 @@ def add_note(
     in which case body should be HTML or Markdown, respectively.
     If [i]--edit/-e[/] flag is set, note will be opened in default editor before being added.
     If [i]--show/-s[/] flag is set, note will be shown in Notes.app after being added.
+    By default, prints the note ID to stdout. Use [i]--json/-j[/] to print full note data as JSON.
 
     Account and top level folder may be specified with [i]--account/-a[/] and [i]--folder/-f[/], respectively.
     If not provided, default account and folder are used.
@@ -196,6 +198,13 @@ def add_note(
     try:
         account = notes.account(account_name)
         new_note = account.make_note(name, body, folder_name)
+        if json_:
+            note_data = new_note.asdict()
+            note_data["creation_date"] = note_data["creation_date"].isoformat()
+            note_data["modification_date"] = note_data["modification_date"].isoformat()
+            print(json.dumps(note_data, indent=2))
+        else:
+            print(new_note.id)
         if show:
             new_note.show()
     except ScriptError as e:
