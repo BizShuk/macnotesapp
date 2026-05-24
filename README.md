@@ -1,19 +1,25 @@
 # MacNotesApp
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+> **Fork Note:** This is a modified version of the original [RhetTbull/macnotesapp](https://github.com/RhetTbull/macnotesapp) with ID-first CLI redesign. pushed to [bizshuk/macnotesapp](https://github.com/bizshuk/macnotesapp)
 
 Work with Apple MacOS Notes.app from the command line. Also includes python interface for scripting Notes.app from your own python code.
 
 ## Installation
+
 ## Installation
 
 The recommended way to install `macnotesapp` is via the [uv](https://github.com/astral-sh/uv) python package manager tool.
 
 ### Installation using `uv`
 
-* Open `Terminal` (search for `Terminal` in Spotlight or look in `Applications/Utilities`)
-* Install `uv` by running the following command in Terminal:
+- Open `Terminal` (search for `Terminal` in Spotlight or look in `Applications/Utilities`)
+- Install `uv` by running the following command in Terminal:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -25,13 +31,13 @@ If you previously installed `uv`, upgrade to the latest version:
 uv self update
 ```
 
-* Type the following into Terminal:
+- Type the following into Terminal:
 
 ```bash
 uv tool install --python 3.13 macnotesapp
 ```
 
-* Now you should be able to run `macnotesapp` by typing: `macnotesapp`
+- Now you should be able to run `macnotesapp` by typing: `macnotesapp`
 
 Once you've installed macnotesapp with `uv`, to upgrade to the latest version:
 
@@ -47,7 +53,7 @@ Note: If installing on an older version of macOS and you encounter issues instal
 
 ### Install with [homebrew](brew.sh)
 
-* Install `homebrew` according to instructions at [https://brew.sh/](https://brew.sh/)
+- Install `homebrew` according to instructions at [https://brew.sh/](https://brew.sh/)
 
 Once you have installed `homebrew`, you can install the CLI in the terminal with:
 
@@ -55,9 +61,58 @@ Once you have installed `homebrew`, you can install the CLI in the terminal with
     brew update
     brew install macnotesapp
 
-* Now you should be able to run `notes` by typing: `notes`
+- Now you should be able to run `notes` by typing: `notes`
 
 **Note**: This only works for Apple Silicon (M1, etc.) Macs. If you are using an Intel Mac, use the uv instructions above.
+
+## Install from this Fork
+
+```bash
+git clone https://github.com/bizshuk/macnotesapp.git
+cd macnotesapp
+uv sync
+uv run notes --help
+```
+
+## ID-First CLI Design
+
+This fork implements **ID-first architecture** — all write operations use Note ID instead of name to avoid ambiguity.
+
+### Key Concepts
+
+- **Note ID**: Unique identifier like `x-coredata://.../ICNote/p87`
+- **Truncated ID**: Display format `.../ICNote/p87` (displayed by `list`)
+- **Partial ID**: You can use just `p87` — CLI auto-resolves to full ID
+
+### Typical Workflow
+
+```bash
+# 1. Find note ID
+notes list --text "週報"
+
+# 2. Get content (shows name + body clearly separated)
+notes get p87 --format markdown
+
+# 3. Update content
+notes edit p87 --body "新內容"
+
+# 4. Or update name only
+notes edit p87 --name "新標題"
+```
+
+### Output Formats
+
+| Format | Use Case |
+|--------|----------|
+| Default | Human-readable, tab-separated |
+| `--json` | LLM workflows, scripting |
+| `--id-only` | Shell pipelines |
+
+### Exit Codes
+
+- `0` — Success
+- `1` — Error (not found, invalid args, etc.)
+- `130` — User interrupted (Ctrl+C)
 
 ## Documentation
 
@@ -88,96 +143,23 @@ Options:
 Commands:
   accounts  Print information about Notes accounts.
   add       Add new note.
-  cat       Print one or more notes to STDOUT
+  app       Control Notes.app.
+  attach    Manage note attachments.
   config    Configure default settings for account, editor, etc.
-  delete    Delete a note.
-  dump      Dump all notes or selection of notes for debugging
-  edit      Edit an existing note's body.
-  help      Print help; for help on commands: help <command>.
-  list      List notes, optionally filtering by account or text.
+  delete    Delete a note by ID.
+  edit      Edit a note's name and/or body by ID.
+  get       Get note content by ID.
+  list      List notes with optional filters.
   mkdir     Create a new folder.
-  move      Move a note to a different folder.
-  rename    Rename a note.
+  move      Move a note to a different folder by ID.
+  rename    Rename a note by ID.
   rmdir     Delete a folder.
+  selected  Get the note currently selected in Notes.app UI.
 
 ```
 <!-- [[[end]]] -->
 
-Use `notes help COMMAND` to get help on a specific command. For example, `notes help add`:
-
-<!-- [[[cog
-import cog
-from macnotesapp.cli import cli_main
-from click.testing import CliRunner
-runner = CliRunner()
-result = runner.invoke(cli_main, ["help", "add", "--no-markup"])
-help = result.output.replace("Usage: cli-main", "Usage: notes")
-cog.out(
-    "```\n{}\n```".format(help)
-)
-]]] -->
-```
-Usage: notes add [OPTIONS] NOTE
-
-  Add new note.
-
-  There are multiple ways to add a new note:
-
-  Add a new note from standard input (STDIN):
-
-  notes add
-
-  cat file.txt | notes add
-
-  notes add < file.txt
-
-  Add a new note by passing string on command line:
-
-  notes add NOTE
-
-  Add a new note by opening default editor (defined in $EDITOR or via `notes
-  config`):
-
-  notes add --edit
-
-  notes add -e
-
-  Add a new note from URL (downloads URL, creates a cleaned readable version
-  to store in new Note):
-
-  notes add --url URL
-
-  notes add -u URL
-
-  If NOTE is a single line, adds new note with name NOTE and no body. If NOTE is
-  more than one line, adds new note where name is first line of NOTE and body is
-  remainder.
-
-  Body of note must be plain text unless --html/-h or --markdown/-m
-  flag is set in which case body should be HTML or Markdown, respectively. If
-  --edit/-e flag is set, note will be opened in default editor before
-  being added. If --show/-s flag is set, note will be shown in Notes.app
-  after being added.
-
-  Account and top level folder may be specified with --account/-a and
-  --folder/-f, respectively. If not provided, default account and folder
-  are used.
-
-Options:
-  -s, --show             Show note in Notes after adding.
-  -F, --file FILENAME
-  -u, --url URL
-  -h, --html             Use HTML for body of note.
-  -m, --markdown         Use Markdown for body of note.
-  -p, --plaintext        Use plaintext for body of note (default unless changed
-                         in `notes config`).
-  -e, --edit             Edit note text before adding in default editor.
-  -a, --account ACCOUNT  Add note to account ACCOUNT.
-  -f, --folder FOLDER    Add note to folder FOLDER.
-  --help                 Show this message and exit.
-
-```
-<!-- [[[end]]] -->
+For full command reference, see [README.cli.md](./README.cli.md).
 
 ## Python Usage
 
@@ -241,17 +223,16 @@ print(note_names)
 
 ## See Also
 
-* [apple-notes-parser](https://github.com/RhetTbull/apple-notes-parser): Reads data directly from the Apple Notes database. Read-only but is faster than using the AppleScript API. Supports tags and folders.
-* [mcp-apple-notes-py](https://github.com/mcolyer/mcp-apple-notes-py): MCP server that uses macnotesapp and apple-notes-parser; provides LLMs access to your notes.
+- [apple-notes-parser](https://github.com/RhetTbull/apple-notes-parser): Reads data directly from the Apple Notes database. Read-only but is faster than using the AppleScript API. Supports tags and folders.
+- [mcp-apple-notes-py](https://github.com/mcolyer/mcp-apple-notes-py): MCP server that uses macnotesapp and apple-notes-parser; provides LLMs access to your notes.
 
 ## Known Issues and Limitations
 
-* Password protected notes are not supported; unlocked password-protected notes can be accessed but locked notes cannot
-* Notes containing tags (#tagname) can be read but the tags will be stripped from the body of the note
-* Tags cannot be added to notes and will show up as plaintext if added manually with macnotesapp
-* Currently, only notes in top-level folders are accessible to `macnotesapp` (#4)
-* Attachments are not currently handled and will be ignored (#15)
-* The title style is not correctly set (#13)
+- Password protected notes are not supported; unlocked password-protected notes can be accessed but locked notes cannot
+- Notes containing tags (#tagname) can be read but the tags will be stripped from the body of the note
+- Tags cannot be added to notes and will show up as plaintext if added manually with macnotesapp
+- Currently, only notes in top-level folders are accessible to `macnotesapp` (#4)
+- Attachments are fully supported via `notes attach` command
 
 ## Contributors ✨
 
