@@ -470,6 +470,8 @@ def edit_note(note_id, body, name, use_html, use_markdown, interactive):
         elif not use_html:
             body = f"<div>{body}</div>"
         note.body = body
+        # Restore name in case Notes.app corrupted it during body update
+        note.name = original_name
 
     if name:
         note.name = name
