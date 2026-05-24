@@ -415,25 +415,17 @@ def rename_note(note_id, new_name):
 
 
 @click.command(name="delete")
-@click.argument("note_name", metavar="NOTE_NAME")
+@click.argument("note_id", metavar="ID")
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt.")
-@click.option(
-    "--account",
-    "-a",
-    "account_name",
-    metavar="ACCOUNT",
-    type=str,
-    help="Account to search in.",
-)
-def delete_note(note_name, yes, account_name):
-    """Delete a note.
+def delete_note(note_id, yes):
+    """Delete a note by ID.
 
-    Example: notes delete "Old Note"
+    Example: notes delete x-coredata://.../IMAPNote/p87 --yes
     """
     notes_app = macnotesapp.NotesApp()
-    matching_notes = notes_app.notes(name=[note_name], accounts=[account_name] if account_name else None)
+    matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
-        click.echo(f"Error: Note '{note_name}' not found.", err=True)
+        click.echo(f"Error: Note '{note_id}' not found.", err=True)
         sys.exit(1)
     note = matching_notes[0]
     if not yes:
