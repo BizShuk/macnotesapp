@@ -463,9 +463,6 @@ def edit_note(note_id, body, name, use_html, use_markdown, interactive):
     note = matching_notes[0]
     original_name = note.name
 
-    if name:
-        note.name = name
-
     if body:
         # Non-interactive mode: use provided body
         if use_markdown:
@@ -473,6 +470,11 @@ def edit_note(note_id, body, name, use_html, use_markdown, interactive):
         elif not use_html:
             body = f"<div>{body}</div>"
         note.body = body
+
+    if name:
+        note.name = name
+
+    if body or name:
         click.echo(f"Updated '{note.name}'")
     elif interactive:
         # Interactive mode: open editor with current content
@@ -509,9 +511,6 @@ def edit_note(note_id, body, name, use_html, use_markdown, interactive):
         new_html = markdown2.markdown(body_content, extras=MARKDOWN_EXTRAS)
         note.body = new_html
         os.unlink(temp_path)
-        click.echo(f"Updated '{note.name}'")
-    elif name:
-        # Name only update - save
         click.echo(f"Updated '{note.name}'")
     else:
         # No body and not interactive - show error
