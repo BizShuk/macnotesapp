@@ -437,19 +437,22 @@ def delete_note(note_id, yes):
 
 @click.command(name="edit")
 @click.argument("note_id", metavar="ID")
-@click.option("--body", "-b", help="Set body directly (non-interactive).")
+@click.option("--body", "-b", help="Set body content directly (non-interactive).")
+@click.option("--name", "-n", help="Set note name only.")
 @click.option("--html", "-h", "use_html", is_flag=True, help="Treat body as HTML.")
 @click.option("--markdown", "-m", "use_markdown", is_flag=True, help="Treat body as Markdown.")
 @click.option("--edit", "-e", "interactive", is_flag=True, help="Open in editor (interactive mode).")
-def edit_note(note_id, body, use_html, use_markdown, interactive):
-    """Edit a note's body by ID.
+def edit_note(note_id, body, name, use_html, use_markdown, interactive):
+    """Edit a note's name and/or body by ID.
 
-    Default (non-interactive): use --body to set content directly.
-    With --edit: opens editor with current content.
+    Default (non-interactive): use --body and/or --name to set content directly.
+    With --edit: opens editor with current content (both name and body).
 
-    Example: notes edit x-coredata://.../IMAPNote/p87 --body "New content"
-    Example: notes edit x-coredata://.../IMAPNote/p87 --edit
-    Example: notes edit p87 --body "New content"
+    Examples:
+      notes edit x-coredata://.../IMAPNote/p87 --body "New content"
+      notes edit p87 --name "New Title"
+      notes edit p87 --name "New Title" --body "New body"
+      notes edit p87 --edit
     """
     note_id = resolve_note_id(note_id)
     notes_app = macnotesapp.NotesApp()
@@ -460,6 +463,9 @@ def edit_note(note_id, body, use_html, use_markdown, interactive):
     note = matching_notes[0]
     original_name = note.name
 
+    if name:
+        note.name = name
+
     if body:
         # Non-interactive mode: use provided body
         if use_markdown:
@@ -467,9 +473,9 @@ def edit_note(note_id, body, use_html, use_markdown, interactive):
         elif not use_html:
             body = f"<div>{body}</div>"
         note.body = body
-        click.echo(f"Updated '{original_name}'")
+        click.echo(f"Updated '{note.name}'")
     elif interactive:
-        # Interactive mode: open editor
+        # Interactive mode: open editor with current content
         import tempfile
         config = ConfigSettings()
         settings = config.read()
@@ -477,7 +483,8 @@ def edit_note(note_id, body, use_html, use_markdown, interactive):
         if editor.startswith("$"):
             editor = os.environ.get(editor[1:], "vim")
 
-        current_md = html2md(note.body)
+        # Include name in editor header
+        current_md = f"# {note.name}\n\n{html2md(note.body)}"
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write(current_md)
             temp_path = f.name
@@ -491,13 +498,24 @@ def edit_note(note_id, body, use_html, use_markdown, interactive):
         with open(temp_path, "r") as f:
             new_content = f.read()
 
-        new_html = markdown2.markdown(new_content, extras=MARKDOWN_EXTRAS)
+        # Parse name from first line if it's a header
+        lines = new_content.split("\n", 1)
+        if lines[0].startswith("# "):
+            note.name = lines[0][2:].strip()
+            body_content = lines[1] if len(lines) > 1 else ""
+        else:
+            body_content = new_content
+
+        new_html = markdown2.markdown(body_content, extras=MARKDOWN_EXTRAS)
         note.body = new_html
         os.unlink(temp_path)
         click.echo(f"Updated '{note.name}'")
+    elif name:
+        # Name only update - save
+        click.echo(f"Updated '{note.name}'")
     else:
         # No body and not interactive - show error
-        click.echo("Error: No content provided. Use --body TEXT or --edit for interactive mode.", err=True)
+        click.echo("Error: No content provided. Use --body TEXT, --name TEXT, or --edit for interactive mode.", err=True)
         sys.exit(1)
 
 
@@ -585,11 +603,17 @@ def remove_folder(folder_name, yes, account_name):
     help="Output format (default: markdown)",
 )
 @click.option("--show", "-s", is_flag=True, help="Show note in Notes.app after getting.")
-def get_note(note_id, output_format, show):
+@click.option("--name-only", is_flag=True, help="Output only the note name.")
+@click.option("--body-only", is_flag=True, help="Output only the note body.")
+def get_note(note_id, output_format, show, name_only, body_only):
     """Get note content by ID.
 
-    Example: notes get x-coredata://.../IMAPNote/p87 --format markdown
+    Default: outputs both name and body clearly separated.
+    Use --name-only or --body-only to output only one field.
+
     Example: notes get p87 --format markdown
+    Example: notes get p87 --name-only
+    Example: notes get p87 --body-only
     """
     note_id = resolve_note_id(note_id)
     notesapp = macnotesapp.NotesApp()
@@ -599,19 +623,34 @@ def get_note(note_id, output_format, show):
         sys.exit(1)
     note = matching_notes[0]
 
+    # Handle --name-only and --body-only first
+    if name_only:
+        print(note.name)
+        return
+    if body_only:
+        if output_format == "html":
+            print(note.body)
+        elif output_format == "plaintext":
+            print(note.plaintext)
+        else:  # markdown
+            print(html2md(note.body))
+        return
+
+    # Default: output both name and body clearly separated
     if output_format == "json":
         note_data = note.asdict()
         note_data["creation_date"] = note_data["creation_date"].isoformat()
         note_data["modification_date"] = note_data["modification_date"].isoformat()
         print(json.dumps(note_data, indent=2))
     else:
+        # Output format: clear separation of name and body
+        console = Console()
         if output_format == "html":
-            print(note.body)
+            print(f"<!-- NAME: {note.name} -->\n{note.body}")
         elif output_format == "plaintext":
-            print(note.plaintext)
+            print(f"=== NAME: {note.name} ===\n{note.plaintext}")
         else:  # markdown
-            console = Console()
-            console.print(Markdown(html2md(note.body)))
+            print(f"# {note.name}\n\n{html2md(note.body)}")
 
     if show:
         note.show()
