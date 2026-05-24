@@ -491,25 +491,17 @@ def edit_note(note_id, body, use_html, use_markdown):
 
 
 @click.command(name="move")
-@click.argument("note_name", metavar="NOTE_NAME")
+@click.argument("note_id", metavar="ID")
 @click.option("--folder", "-f", required=True, help="Destination folder.")
-@click.option(
-    "--account",
-    "-a",
-    "account_name",
-    metavar="ACCOUNT",
-    type=str,
-    help="Account to search in.",
-)
-def move_note(note_name, folder, account_name):
-    """Move a note to a different folder.
+def move_note(note_id, folder):
+    """Move a note to a different folder by ID.
 
-    Example: notes move "My Note" --folder "Archive"
+    Example: notes move x-coredata://.../IMAPNote/p87 --folder Archive
     """
     notes_app = macnotesapp.NotesApp()
-    matching_notes = notes_app.notes(name=[note_name], accounts=[account_name] if account_name else None)
+    matching_notes = notes_app.notes(id=[note_id])
     if not matching_notes:
-        click.echo(f"Error: Note '{note_name}' not found.", err=True)
+        click.echo(f"Error: Note '{note_id}' not found.", err=True)
         sys.exit(1)
     note = matching_notes[0]
     old_folder = note.folder
