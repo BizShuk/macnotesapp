@@ -585,6 +585,9 @@ class NotesList:
                 results_list.extend(NSDate_to_datetime(date) for date in results)
             elif selector == "container":
                 results_list.extend(str(container.name()) for container in results)
+            elif selector == "passwordProtected":
+                # Convert AppleScript boolean to Python bool
+                results_list.extend(bool(r) for r in results)
             else:
                 results_list.extend([str(r) for r in results])
         return results_list

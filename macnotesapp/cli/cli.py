@@ -285,7 +285,7 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
 
     if id_only:
         for nid in noteslist.id:
-            print(nid)
+            print(truncate_id(nid))
         return
 
     if json_:
