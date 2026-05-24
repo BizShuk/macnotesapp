@@ -395,13 +395,18 @@ def delete_note(note_id, yes):
 
 @click.command(name="edit")
 @click.argument("note_id", metavar="ID")
-@click.option("--body", "-b", help="Set body directly without opening editor.")
+@click.option("--body", "-b", help="Set body directly (non-interactive).")
 @click.option("--html", "-h", "use_html", is_flag=True, help="Treat body as HTML.")
 @click.option("--markdown", "-m", "use_markdown", is_flag=True, help="Treat body as Markdown.")
-def edit_note(note_id, body, use_html, use_markdown):
+@click.option("--edit", "-e", "interactive", is_flag=True, help="Open in editor (interactive mode).")
+def edit_note(note_id, body, use_html, use_markdown, interactive):
     """Edit a note's body by ID.
 
+    Default (non-interactive): use --body to set content directly.
+    With --edit: opens editor with current content.
+
     Example: notes edit x-coredata://.../IMAPNote/p87 --body "New content"
+    Example: notes edit x-coredata://.../IMAPNote/p87 --edit
     """
     notes_app = macnotesapp.NotesApp()
     matching_notes = notes_app.notes(id=[note_id])
@@ -412,14 +417,15 @@ def edit_note(note_id, body, use_html, use_markdown):
     original_name = note.name
 
     if body:
+        # Non-interactive mode: use provided body
         if use_markdown:
             body = markdown2.markdown(body, extras=MARKDOWN_EXTRAS)
         elif not use_html:
             body = f"<div>{body}</div>"
         note.body = body
         click.echo(f"Updated '{original_name}'")
-    else:
-        # Open in editor with markdown
+    elif interactive:
+        # Interactive mode: open editor
         import tempfile
         config = ConfigSettings()
         settings = config.read()
@@ -445,6 +451,10 @@ def edit_note(note_id, body, use_html, use_markdown):
         note.body = new_html
         os.unlink(temp_path)
         click.echo(f"Updated '{note.name}'")
+    else:
+        # No body and not interactive - show error
+        click.echo("Error: No content provided. Use --body TEXT or --edit for interactive mode.", err=True)
+        sys.exit(1)
 
 
 @click.command(name="move")
