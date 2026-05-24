@@ -203,35 +203,88 @@ def add_note(
         raise click.Abort() from e
 
 
+def truncate_id(note_id: str) -> str:
+    """Truncate ID for display: .../IMAPNote/p87"""
+    if note_id and note_id.startswith("x-coredata://"):
+        parts = note_id.split("/")
+        if len(parts) >= 3:
+            return f".../{parts[-2]}/{parts[-1]}"
+    return note_id
+
+
 @click.command(name="list")
-@click.option(
-    "--account",
-    "-a",
-    "account_name",
-    metavar="ACCOUNT",
-    multiple=True,
-    type=str,
-    help="Limit results to account ACCOUNT; may be repeated to include multiple accounts.",
-)
-# @click.option(
-#     "--folder",
-#     "-f",
-#     "folder_name",
-#     metavar="FOLDER",
-#     multiple=True,
-#     type=str,
-#     help="Limit results to folder FOLDER; may be repeated to include multiple folders.",
-# )
-@click.argument("text", metavar="TEXT", required=False)
-def list_notes(account_name, text):
-    """List notes, optionally filtering by account or text."""
+@click.option("--name", "-n", "name_filter", metavar="TEXT", type=str, help="Filter by name containing TEXT")
+@click.option("--body", "-b", "body_filter", metavar="TEXT", type=str, help="Filter by body containing TEXT")
+@click.option("--text", "-t", "text_filter", metavar="TEXT", type=str, help="Filter by name or body containing TEXT")
+@click.option("--account", "-a", "account_name", metavar="ACCOUNT", multiple=True, type=str, help="Filter by account (can repeat)")
+@click.option("--folder", "-f", "folder_name", metavar="FOLDER", multiple=True, type=str, help="Filter by folder (can repeat)")
+@click.option("--password-protected", "-p", is_flag=True, help="Show only password-protected notes")
+@click.option("--json", "-j", "json_", is_flag=True, help="Output as JSON")
+@click.option("--id-only", "-i", is_flag=True, help="Output only note IDs (one per line)")
+def list_notes(name_filter, body_filter, text_filter, account_name, folder_name, password_protected, json_, id_only):
+    """List notes with optional filters.
+
+    Example: notes list --name "週報" --account iCloud
+    """
     notesapp = macnotesapp.NotesApp()
-    print_notes_list(
-        notesapp.noteslist(
-            accounts=[account_name] if account_name else None,
-            text=[text] if text else None,
-        )
+
+    noteslist = notesapp.noteslist(
+        name=[name_filter] if name_filter else None,
+        body=[body_filter] if body_filter else None,
+        text=[text_filter] if text_filter else None,
+        accounts=[list(account_name)] if account_name else None,
+        password_protected=password_protected if password_protected else None,
     )
+
+    if id_only:
+        for nid in noteslist.id:
+            print(nid)
+        return
+
+    if json_:
+        import json
+        notes_data = []
+        for i in range(len(noteslist)):
+            # Extract account from folder path
+            folder = noteslist.folder[i] or ""
+            folder_parts = folder.split("/")
+            account = folder_parts[0] if folder_parts else ""
+            folder_name_only = folder_parts[-1] if len(folder_parts) > 1 else ""
+
+            notes_data.append({
+                "id": noteslist.id[i],
+                "name": noteslist.name[i],
+                "account": account,
+                "folder": folder_name_only,
+                "creation_date": noteslist.creation_date[i].isoformat() if noteslist.creation_date[i] else None,
+                "modification_date": noteslist.modification_date[i].isoformat() if noteslist.modification_date[i] else None,
+                "password_protected": noteslist.password_protected[i],
+            })
+        print(json.dumps(notes_data, indent=2))
+        return
+
+    # Human-readable output
+    console = Console()
+    id_width = 25
+    folder_width = 18
+    name_width = 28
+    date_width = 18
+    pwd_width = 5
+    header = f"{'ID':<{id_width}} {'ACCOUNT/FOLDER':<{folder_width}} {'NAME':<{name_width}} {'MOD_DATE':<{date_width}} {'PWD':<{pwd_width}}"
+    print(header)
+
+    for i in range(len(noteslist)):
+        note_id = truncate_id(noteslist.id[i])
+        folder = noteslist.folder[i] or "---"
+        name = noteslist.name[i] or "---"
+        mod_date = noteslist.modification_date[i].strftime("%Y-%m-%dT%H:%M") if noteslist.modification_date[i] else "---"
+        pwd = "🔒" if noteslist.password_protected[i] else "-"
+
+        # Truncate long names
+        if len(name) > name_width - 2:
+            name = name[:name_width-2] + ".."
+
+        print(f"{note_id:<{id_width}} {folder:<{folder_width}} {name:<{name_width}} {mod_date:<{date_width}} {pwd}")
 
 
 @click.command(name="cat")
