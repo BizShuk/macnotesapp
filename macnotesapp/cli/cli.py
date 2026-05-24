@@ -300,43 +300,6 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
         print(f"{note_id:<{id_width}} {folder_display:<{folder_width}} {name:<{name_width}} {mod_date:<{date_width}} {pwd}")
 
 
-@click.command(name="cat")
-@click.option("--plaintext", "-p", is_flag=True, help="Output note as plain text.")
-@click.option("--markdown", "-m", is_flag=True, help="Output note as Markdown.")
-@click.option("--html", "-h", is_flag=True, help="Output note as HTML.")
-@click.option(
-    "--json",
-    "-j",
-    "json_",
-    is_flag=True,
-    help="Output note as JSON. "
-    "The default format for the note body in JSON is HTML "
-    "(this is how the note is stored in Notes). "
-    "If --plaintext or --markdown is also specified, "
-    "the note body in the resulting JSON will be in the specified format.",
-)
-@click.argument("name", metavar="NOTE_NAME", required=True)
-def cat_notes(name, plaintext, markdown, html, json_):
-    """Print one or more notes to STDOUT"""
-    notesapp = macnotesapp.NotesApp()
-    notes = notesapp.notes(name=[name])
-    output = (
-        "plaintext"
-        if plaintext
-        else "markdown"
-        if markdown
-        else "html"
-        if html
-        else "rich"
-    )
-
-    if json_:
-        print_notes_as_json(notes, plaintext=plaintext)
-    else:
-        for note in notes:
-            print_note(note, output=output)
-
-
 @click.command(name="config")
 def config():
     """Configure default settings for account, editor, etc."""
@@ -387,21 +350,6 @@ def config():
     ).ask()
     config.write(settings)
     click.echo(f"Settings saved to {CONFIG_FILE}")
-
-
-@click.command(name="dump")
-@click.option("--selected", "-s", is_flag=True, help="Dump only selected notes.")
-@click.option("--no-body", "-B", is_flag=True, help="Do not dump note body.")
-def dump(selected, no_body):
-    """Dump all notes or selection of notes for debugging"""
-    notesapp = macnotesapp.NotesApp()
-    if selected:
-        for note in notesapp.selection:
-            dump_note(note, no_body=no_body)
-    else:
-        for account in notesapp.accounts:
-            noteslist = notesapp.noteslist(accounts=[account])
-            dump_notes_list(noteslist, account)
 
 
 @click.command(name="rename")
@@ -669,7 +617,7 @@ def cli_main(ctx, debug):
 
 
 # add the commands to the main group
-for command in [accounts, add_note, cat_notes, config, list_notes, dump, help,
+for command in [accounts, add_note, config, list_notes,
                 rename_note, delete_note, edit_note, move_note, make_folder, remove_folder,
                 get_note, selected_notes, attach_group, app_group]:
     cli_main.add_command(command)
@@ -760,35 +708,3 @@ def print_notes_as_json(notes: Iterable[macnotesapp.Note], plaintext: bool = Fal
         json_list.append(json_data)
     console = Console()
     console.print(json.dumps(json_list, indent=4))
-
-
-def dump_note(note: macnotesapp.Note, no_body: bool = False):
-    """Dump note data to STDOUT for debugging purposes"""
-    print(f"{note.id=}")
-    print(f"{note.name=}")
-    print(f"{note.account=}")
-    print(f"{note.folder=}")
-    print(f"{note.creation_date=}")
-    print(f"{note.modification_date=}")
-    print(f"{note.password_protected=}")
-    if not no_body:
-        print(f"{note.body=}")
-        print(f"{note.plaintext=}")
-
-
-def dump_notes_list(
-    noteslist: macnotesapp.NotesList, account: str, no_body: bool = False
-):
-    """Dump NotesList data to STDOUT for debugging purposes"""
-    notesdicts = noteslist.asdict()
-    for notesdict in notesdicts:
-        print(f"note.id={notesdict['id']}")
-        print(f"note.name={notesdict['name']}")
-        print(f"note.folder={notesdict['folder']}")
-        print(f"note.account={account}")
-        print(f"note.creation_date={notesdict['creation_date']}")
-        print(f"note.modification_date={notesdict['modification_date']}")
-        print(f"note.password_protected={notesdict['password_protected']}")
-        if not no_body:
-            print(f"note.body={notesdict['body']}")
-            print(f"note.plaintext={notesdict['plaintext']}")
