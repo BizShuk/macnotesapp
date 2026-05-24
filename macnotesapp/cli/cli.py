@@ -233,6 +233,7 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
         body=[body_filter] if body_filter else None,
         text=[text_filter] if text_filter else None,
         accounts=[list(account_name)] if account_name else None,
+        folders=[list(folder_name)] if folder_name else None,
         password_protected=password_protected if password_protected else None,
     )
 
