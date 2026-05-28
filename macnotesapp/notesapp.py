@@ -851,11 +851,12 @@ class Attachment:
 
     def save(self, path: str | bytes | os.PathLike) -> str:
         """Save attachment to file"""
-        if not os.path.exists(str(path)):
-            raise FileNotFoundError(f"Path does not exist: {path}")
+        # Resolve to absolute path and create directory: ScriptingBridge cannot handle relative paths
+        path = os.path.abspath(str(path))
+        os.makedirs(path, exist_ok=True)
 
         url = AppKit.NSURL.alloc().initFileURLWithPath_(
-            os.path.join(str(path), self.name)
+            os.path.join(path, self.name)
         )
         self._attachment.saveIn_as_(url, OSType("item"))
         return str(url.path())
