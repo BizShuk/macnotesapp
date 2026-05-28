@@ -722,20 +722,23 @@ def get_note(note_id, output_format, show, name_only, body_only):
         return
 
     # Default: output both name and body clearly separated
+    folder_name = note.folder.split("/")[-1] if note.folder else ""
     if output_format == "json":
         note_data = note.asdict()
+        note_data["id"] = format_display_id(note.id, folder_name)
         note_data["creation_date"] = note_data["creation_date"].isoformat()
         note_data["modification_date"] = note_data["modification_date"].isoformat()
         print(json.dumps(note_data, indent=2))
     else:
         # Output format: clear separation of name and body
+        display_id = format_display_id(note.id, folder_name)
         console = Console()
         if output_format == "html":
-            print(f"<!-- NAME: {note.name} -->\n{note.body}")
+            print(f"<!-- ID: {display_id} -->\n<!-- NAME: {note.name} -->\n{note.body}")
         elif output_format == "plaintext":
-            print(f"=== NAME: {note.name} ===\n{note.plaintext}")
+            print(f"# ID: {display_id}\n=== NAME: {note.name} ===\n{note.plaintext}")
         else:  # markdown
-            print(f"# {note.name}\n\n{html2md(note.body)}")
+            print(f"# ID: {display_id}\n# {note.name}\n\n{html2md(note.body)}")
 
     if show:
         note.show()
