@@ -19,6 +19,14 @@ def _safe_filename(name: str) -> str:
     return name.replace("/", "_").replace("\\", "_").replace(":", "_")
 
 
+_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".heic", ".heif"}
+
+
+def _is_image_filename(name: str) -> bool:
+    """Return True if filename looks like an image based on extension."""
+    return any(name.lower().endswith(ext) for ext in _IMAGE_EXTENSIONS)
+
+
 def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     """Dump a single note to a .md file.
 
@@ -42,15 +50,29 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     saved_attachments = []
 
     for att in note.attachments:
-        att_filename = f"{short_id}_{att.name}"
-        att_dir = out_dir / "attachments"
-        att_dir.mkdir(exist_ok=True)
-        try:
-            att.save(str(att_dir))
-            saved_attachments.append(att_filename)
-            attachment_lines.append(f"[{att.name}](attachments/{att_filename})")
-        except Exception as e:
-            attachment_lines.append(f"[{att.name}](attachments/{att_filename})  # save failed: {e}")
+        att_url = att.URL
+        is_url_attachment = att_url and att_url.startswith("http")
+
+        if is_url_attachment:
+            # URL attachment — embed as image if URL ends with image extension
+            if _is_image_filename(att_url):
+                attachment_lines.append(f"![{att.name}]({att_url})")
+            else:
+                attachment_lines.append(f"[{att.name}]({att_url})")
+        else:
+            # File attachment — save to attachments/ and reference locally
+            att_filename = f"{short_id}_{att.name}"
+            att_dir = out_dir / "attachments"
+            att_dir.mkdir(exist_ok=True)
+            try:
+                att.save(str(att_dir))
+                saved_attachments.append(att_filename)
+                if _is_image_filename(att.name):
+                    attachment_lines.append(f"![{att.name}](attachments/{att_filename})")
+                else:
+                    attachment_lines.append(f"[{att.name}](attachments/{att_filename})")
+            except Exception as e:
+                attachment_lines.append(f"[{att.name}](attachments/{att_filename})  # save failed: {e}")
 
     # Write .md file
     lines = [f"# {note.name}\n", body_md]
