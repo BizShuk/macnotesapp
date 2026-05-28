@@ -34,7 +34,11 @@ def _is_image_filename(name: str) -> bool:
 def _unify_body_link_text(body_md: str, url_to_linktext: dict) -> str:
     """Replace link text in body markdown with attachment name for matching URLs.
 
-    Skips image embeds ![alt](url), only replaces text links [text](url).
+    Handles three cases:
+    - [text](url) → replace text with attachment name if in map
+    - [](url) → replace empty text with attachment name
+    - <https://...> → convert bare URL to [domain](url)
+    Skips image embeds ![alt](url).
     """
     def replace_link(match):
         text = match.group(1)
@@ -43,9 +47,20 @@ def _unify_body_link_text(body_md: str, url_to_linktext: dict) -> str:
             return f"[{url_to_linktext[url]}]({url})"
         return match.group(0)
 
-    # Match text links but NOT image embeds (which start with ! before the bracket)
+    def replace_bare_url(match):
+        url = match.group(1)
+        if url in url_to_linktext:
+            return f"[{url_to_linktext[url]}]({url})"
+        return f"[{_url_domain(url)}]({url})"
+
+    # Pass 1: replace [text](url) and [](url) with attachment name
     pattern = r'\[([^\]]*)\]\((https?://[^)]+)\)'
-    return re.sub(pattern, replace_link, body_md)
+    body_md = re.sub(pattern, replace_link, body_md)
+
+    # Pass 2: convert bare <https://...> URLs to [domain](url)
+    body_md = re.sub(r'<(https?://[^>]+)>', replace_bare_url, body_md)
+
+    return body_md
 
 
 def _url_domain(url: str) -> str:
