@@ -31,6 +31,23 @@ def _is_image_filename(name: str) -> bool:
     return any(name.lower().endswith(ext) for ext in _IMAGE_EXTENSIONS)
 
 
+def _unify_body_link_text(body_md: str, url_to_linktext: dict) -> str:
+    """Replace link text in body markdown with attachment name for matching URLs.
+
+    Skips image embeds ![alt](url), only replaces text links [text](url).
+    """
+    def replace_link(match):
+        text = match.group(1)
+        url = match.group(2)
+        if url in url_to_linktext:
+            return f"[{url_to_linktext[url]}]({url})"
+        return match.group(0)
+
+    # Match text links but NOT image embeds (which start with ! before the bracket)
+    pattern = r'\[([^\]]*)\]\((https?://[^)]+)\)'
+    return re.sub(pattern, replace_link, body_md)
+
+
 def _url_domain(url: str) -> str:
     """Extract clean domain name from URL for use as link text."""
     from urllib.parse import urlparse
@@ -41,11 +58,11 @@ def _url_domain(url: str) -> str:
 
 
 def _add_trailing_spaces(text: str) -> str:
-    """Add two trailing spaces to each line for proper markdown line breaks."""
+    """Add two trailing spaces to each non-empty line for proper markdown line breaks."""
     lines = text.splitlines()
     if not lines:
         return ""
-    return "".join(f"{line}  \n" for line in lines)
+    return "".join(f"{line}  \n" for line in lines if line.strip())
 
 
 _IMAGE_MIME_TO_EXT = {
@@ -110,6 +127,16 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
         note.body, out_dir / "attachments"
     )
     body_md = html2md(body_with_local_paths)
+
+    # Build URL → link_text map from URL attachments (for body link text unification)
+    url_to_linktext = {}
+    for att in note.attachments:
+        att_url = att.URL
+        if att_url and att_url.startswith("http") and not _is_image_filename(att_url):
+            url_to_linktext[att_url] = att.name if att.name else _url_domain(att_url)
+
+    # Replace body link text with attachment name (except image embeds)
+    body_md = _unify_body_link_text(body_md, url_to_linktext)
 
     # Build attachment section
     attachment_lines = []
