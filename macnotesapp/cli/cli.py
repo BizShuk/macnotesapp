@@ -40,6 +40,17 @@ from .commands.app import app_group
 MARKDOWN_EXTRAS = ["fenced-code-blocks", "footnotes", "tables"]
 
 
+def _include_indices(noteslist, folder_filter, exclude_recently_deleted):
+    """Return list of indices to include based on folder and Recently Deleted filters."""
+    indices = list(range(len(noteslist)))
+    if exclude_recently_deleted:
+        indices = [i for i in indices if noteslist.folder[i] != "Recently Deleted"]
+    if folder_filter:
+        folder_set = set(folder_filter)
+        indices = [i for i in indices if noteslist.folder[i] in folder_set]
+    return indices
+
+
 @click.command(name="accounts")
 @click.option(
     "--json", "-j", "json_", is_flag=True, help="Print output in JSON format."
@@ -220,10 +231,11 @@ def add_note(
 @click.option("--text", "-t", "text_filter", metavar="TEXT", type=str, help="Filter by name or body containing TEXT")
 @click.option("--account", "-a", "account_name", metavar="ACCOUNT", multiple=True, type=str, help="Filter by account (can repeat)")
 @click.option("--folder", "-f", "folder_name", metavar="FOLDER", multiple=True, type=str, help="Filter by folder (can repeat)")
+@click.option("--recently-deleted", is_flag=True, help="Include notes in Recently Deleted folder")
 @click.option("--password-protected", "-p", is_flag=True, help="Show only password-protected notes")
 @click.option("--json", "-j", "json_", is_flag=True, help="Output as JSON")
 @click.option("--id-only", "-i", is_flag=True, help="Output only note IDs (one per line)")
-def list_notes(name_filter, body_filter, text_filter, account_name, folder_name, password_protected, json_, id_only):
+def list_notes(name_filter, body_filter, text_filter, account_name, folder_name, recently_deleted, password_protected, json_, id_only):
     """List notes with optional filters.
 
     Example: notes list --name "週報" --account iCloud
@@ -238,21 +250,23 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
         password_protected=password_protected if password_protected else None,
     )
 
+    # Compute indices to include based on filters
+    indices = _include_indices(noteslist, folder_name, exclude_recently_deleted=not recently_deleted)
+
     if id_only:
-        for i in range(len(noteslist)):
+        for i in indices:
             note_id = noteslist.id[i]
             folder = noteslist.folder[i] or ""
             folder_parts = folder.split("/")
-            folder_name = folder_parts[-1] if folder_parts else ""
-            display_id = format_display_id(note_id, folder_name)
+            folder_name_only = folder_parts[-1] if folder_parts else ""
+            display_id = format_display_id(note_id, folder_name_only)
             print(display_id)
         return
 
     if json_:
         import json
         notes_data = []
-        for i in range(len(noteslist)):
-            # Extract account from folder path
+        for i in indices:
             folder = noteslist.folder[i] or ""
             folder_parts = folder.split("/")
             account = folder_parts[0] if folder_parts else ""
@@ -280,7 +294,7 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
     header = f"{'ID':<{id_width}} {'ACCOUNT/FOLDER':<{folder_width}} {'NAME':<{name_width}} {'MOD_DATE':<{date_width}} {'PWD':<{pwd_width}}"
     print(header)
 
-    for i in range(len(noteslist)):
+    for i in indices:
         folder = noteslist.folder[i] or ""
         folder_parts = folder.split("/")
         account = folder_parts[0] if folder_parts else ""
@@ -291,7 +305,6 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
         mod_date = noteslist.modification_date[i].strftime("%Y-%m-%dT%H:%M") if noteslist.modification_date[i] else "---"
         pwd = "🔒" if noteslist.password_protected[i] else "-"
 
-        # Truncate long names
         if len(name) > name_width - 2:
             name = name[:name_width-2] + ".."
 
