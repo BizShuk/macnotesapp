@@ -1,5 +1,6 @@
 """Attach subcommand for managing note attachments"""
 
+import os
 import sys
 
 import click
@@ -112,6 +113,7 @@ def attach_save(note_id, attachment_id, out_dir):
         sys.exit(1)
 
     try:
+        os.makedirs(out_dir, exist_ok=True)
         saved_path = attachment.save(out_dir)
         click.echo(f"Saved to: {saved_path}")
     except Exception as e:
