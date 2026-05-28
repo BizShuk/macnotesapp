@@ -27,6 +27,14 @@ def _is_image_filename(name: str) -> bool:
     return any(name.lower().endswith(ext) for ext in _IMAGE_EXTENSIONS)
 
 
+def _add_trailing_spaces(text: str) -> str:
+    """Add two trailing spaces to each line for proper markdown line breaks."""
+    lines = text.splitlines()
+    if not lines:
+        return ""
+    return "".join(f"{line}  \n" for line in lines)
+
+
 def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     """Dump a single note to a .md file.
 
@@ -74,11 +82,11 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
             except Exception as e:
                 attachment_lines.append(f"[{att.name}](attachments/{att_filename})  # save failed: {e}")
 
-    # Write .md file
-    lines = [f"# {note.name}\n", body_md]
+    # Write .md file (each line ends with double space for proper markdown line breaks)
+    lines = [f"# {note.name}  \n", _add_trailing_spaces(body_md)]
     if attachment_lines:
-        lines.append("\n---\n\n# 附件\n")
-        lines.extend(f"{line}\n" for line in attachment_lines)
+        lines.append("  \n---\n  \n# 附件  \n")
+        lines.extend(f"{line}  \n" for line in attachment_lines)
 
     with open(md_path, "w", encoding="utf-8") as f:
         f.writelines(lines)
