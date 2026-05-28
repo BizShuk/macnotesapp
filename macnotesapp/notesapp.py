@@ -446,6 +446,21 @@ class Account:
         else:
             raise ValueError(f"Could not find folder {folder}")
 
+    def folder_for_name(self, folder: str) -> "Folder":
+        """Return Folder object for folder with name folder.
+
+        Args:
+            folder: Name of folder to retrieve
+
+        Returns:
+            Folder object
+
+        Raises:
+            ValueError: if folder not found
+        """
+        folder_obj = self._folder_for_name(folder)
+        return Folder(folder_obj)
+
     def _run_script(self, script, *args):
         return run_script(script, self.name, *args)
 
@@ -865,6 +880,14 @@ class Folder:
     def name(self) -> str:
         """Name of folder"""
         return str(self._folder.name())
+
+    def notes(self) -> list["Note"]:
+        """Return list of Note objects for all notes in this folder.
+
+        Returns:
+            list of Note objects in this folder
+        """
+        return [Note(note) for note in self._folder.notes()]
 
 
 def parse_id_from_error(error: str) -> str | None:
