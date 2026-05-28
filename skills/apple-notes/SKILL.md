@@ -42,51 +42,51 @@ notes --version
 
 ## Note ID 三種形式（重要）
 
-| 形式           | 範例                              | 用途                                  |
-| -------------- | --------------------------------- | ------------------------------------- |
-| `Full ID`      | `x-coredata://A1B2.../ICNote/p87` | 完整 ID，由 `Notes.app` 內部產生      |
-| `Truncated ID` | `.../ICNote/p87`                  | `notes list` 預設輸出格式（人眼好讀） |
-| `Partial ID`   | `p87`                             | 只給尾段；CLI 自動解析為 full ID      |
+| 形式 | 範例 | 說明 |
+| --- | --- | --- |
+| `Full ID` | `x-coredata://A1B2.../ICNote/p87` | 完整 ID，由 Notes.app 內部產生 |
+| `Display ID` | `Notes/p87` | **預設輸出格式**（含資料夾 + ID，可直接用於所有指令）|
+| `Partial ID` | `p87` | 只給尾段；CLI 自動解析（往前搜尋所有筆記）|
 
-寫入類指令三種形式皆可接受，**最常用 `partial ID`**（例：`notes get p87`）。
+**所有寫入類指令 (`get` / `edit` / `delete` / `rename` / `move` / `attach`) 三種形式皆可接受。**
 
 ## Quick Reference
 
-| 指令                                | 用途               | 最小範例                               |
-| ----------------------------------- | ------------------ | -------------------------------------- |
-| `notes list`                        | 列出／搜尋筆記     | `notes list -t "週報"`                 |
-| `notes get ID`                      | 讀取筆記內容       | `notes get p87`                        |
-| `notes add NOTE`                    | 新增筆記           | `notes add "標題\n內文"`               |
-| `notes edit ID`                     | 編輯名稱／內文     | `notes edit p87 -b "新內容"`           |
-| `notes rename ID NEW`               | 改標題             | `notes rename p87 "新標題"`            |
-| `notes move ID`                     | 搬資料夾           | `notes move p87 -f Archive`            |
-| `notes delete ID`                   | 刪除筆記           | `notes delete p87 -y`                  |
-| `notes selected`                    | 取得目前選取的筆記 | `notes selected -i`                    |
-| `notes mkdir NAME`                  | 建資料夾           | `notes mkdir Archive`                  |
-| `notes rmdir NAME`                  | 刪資料夾           | `notes rmdir Archive -y`               |
-| `notes attach add ID FILE`          | 新增附件           | `notes attach add p87 ./img.jpg`       |
-| `notes attach list ID`              | 列出附件           | `notes attach list p87`                |
-| `notes attach save ID AID -o DIR`   | 下載附件           | `notes attach save p87 p5631 -o ./out` |
-| `notes accounts`                    | 列帳號             | `notes accounts -j`                    |
-| `notes app activate\|quit\|version` | 控制 Notes.app     | `notes app activate`                   |
-| `notes config`                      | 修改預設值         | `notes config`                         |
+| 指令 | 用途 | 最小範例 |
+| --- | --- | --- |
+| `notes list` | 列出／搜尋筆記 | `notes list -t "週報"` |
+| `notes get ID` | 讀取筆記內容 | `notes get Notes/p87` |
+| `notes add NOTE` | 新增筆記 | `notes add "標題\n內文"` |
+| `notes edit ID` | 編輯名稱／內文 | `notes edit Notes/p87 -b "新內容"` |
+| `notes rename ID NEW` | 改標題 | `notes rename Notes/p87 "新標題"` |
+| `notes move ID` | 搬資料夾 | `notes move Notes/p87 -f Archive` |
+| `notes delete ID` | 刪除筆記 | `notes delete Notes/p87 -y` |
+| `notes selected` | 取得目前選取的筆記 | `notes selected -i` |
+| `notes mkdir NAME` | 建資料夾 | `notes mkdir Archive` |
+| `notes rmdir NAME` | 刪資料夾 | `notes rmdir Archive -y` |
+| `notes attach add ID FILE` | 新增附件 | `notes attach add Notes/p87 ./img.jpg` |
+| `notes attach list ID` | 列出附件 | `notes attach list Notes/p87` |
+| `notes attach save ID AID -o DIR` | 下載附件 | `notes attach save Notes/p87 p5631 -o ./out` |
+| `notes accounts` | 列帳號 | `notes accounts -j` |
+| `notes app activate\|quit\|version` | 控制 Notes.app | `notes app activate` |
+| `notes config` | 修改預設值 | `notes config` |
 
 ## 典型工作流 (Workflows)
 
 ### 工作流 1：找到筆記 → 讀內容 → 編輯
 
 ```bash
-# 1) 用關鍵字找筆記，記下回傳的 partial ID（例如 p87）
+# 1) 用關鍵字找筆記，記下回傳的 Display ID（例如 Notes/p87）
 notes list -t "週報"
 
 # 2) 讀內容（預設 markdown，含 name + body 區隔）
-notes get p87
+notes get Notes/p87
 
 # 3) 直接覆寫內文（非互動）
-notes edit p87 -b "## 本週進度\n- 完成 X\n- 進行 Y" -m
+notes edit Notes/p87 -b "## 本週進度\n- 完成 X\n- 進行 Y" -m
 
 # 4) 或改標題
-notes edit p87 -n "2026 W21 週報"
+notes edit Notes/p87 -n "2026 W21 週報"
 ```
 
 ### 工作流 2：管線 (pipe) 自動化
@@ -105,7 +105,7 @@ done
 ```bash
 # 用 JSON 格式取得結構化資料
 notes list -t "週報" --json
-notes get p87 --format json
+notes get Notes/p87 --format json
 notes accounts --json
 ```
 
@@ -137,13 +137,13 @@ notes list -t "X" --id-only         # 只印 ID（給 pipeline 用）
 ### `notes get` — 讀取筆記
 
 ```bash
-notes get p87                       # 預設 markdown，含 name + body
-notes get p87 -f plaintext          # 純文字
-notes get p87 -f html
-notes get p87 -f json
-notes get p87 --name-only           # 只要標題
-notes get p87 --body-only           # 只要內文
-notes get p87 -s                    # 讀完順便在 Notes.app 開啟
+notes get Notes/p87                   # 預設 markdown，含 name + body
+notes get Notes/p87 -f plaintext     # 純文字
+notes get Notes/p87 -f html
+notes get Notes/p87 -f json
+notes get Notes/p87 --name-only       # 只要標題
+notes get Notes/p87 --body-only       # 只要內文
+notes get Notes/p87 -s                # 讀完順便在 Notes.app 開啟
 ```
 
 格式：`html` / `plaintext` / `markdown`（預設）/ `json`。
@@ -183,10 +183,10 @@ notes add "標題\n內文" -s
 ### `notes edit` — 編輯（非互動為主）
 
 ```bash
-notes edit p87 -b "新內文"           # 只改內文
-notes edit p87 -n "新標題"           # 只改標題
-notes edit p87 -n "新標題" -b "新內文" -m
-notes edit p87 -e                    # 用編輯器互動編輯
+notes edit Notes/p87 -b "新內文"        # 只改內文
+notes edit Notes/p87 -n "新標題"        # 只改標題
+notes edit Notes/p87 -n "新標題" -b "新內文" -m
+notes edit Notes/p87 -e               # 用編輯器互動編輯
 ```
 
 `-m` / `-h` 控制 body 解讀格式（markdown / html），不加則視為 plaintext。
@@ -194,20 +194,20 @@ notes edit p87 -e                    # 用編輯器互動編輯
 ### `notes rename` — 只改標題
 
 ```bash
-notes rename p87 "新標題"
+notes rename Notes/p87 "新標題"
 ```
 
 ### `notes move` — 搬到別的資料夾
 
 ```bash
-notes move p87 -f Archive            # -f 為必填
+notes move Notes/p87 -f Archive        # -f 為必填
 ```
 
 ### `notes delete` — 刪除
 
 ```bash
-notes delete p87                     # 會跳確認
-notes delete p87 -y                  # 跳過確認，直接刪
+notes delete Notes/p87                 # 會跳確認
+notes delete Notes/p87 -y              # 跳過確認，直接刪
 ```
 
 ### `notes selected` — 目前 UI 選取的筆記
@@ -231,13 +231,13 @@ notes rmdir "Archive" -y -a iCloud
 ### `notes attach` — 附件
 
 ```bash
-notes attach add p87 ./photo.jpg         # 新增附件到筆記
-notes attach add p87 ./photo.jpg --json
+notes attach add Notes/p87 ./photo.jpg         # 新增附件到筆記
+notes attach add Notes/p87 ./photo.jpg --json
 
-notes attach list p87                    # 列出附件（含 attachment ID）
-notes attach list p87 --json
+notes attach list Notes/p87                   # 列出附件（含 attachment ID）
+notes attach list Notes/p87 --json
 
-notes attach save p87 p5631 -o ./out     # 下載指定附件
+notes attach save Notes/p87 p5631 -o ./out   # 下載指定附件
 ```
 
 `save` 需要兩個 ID：先 note ID、再 attachment ID（從 `list` 取得），`-o` 為必填。
@@ -265,37 +265,36 @@ notes config                         # 互動式設定預設 account、editor、
 
 ## Output Formats
 
-| 格式        | 觸發                         | 適用場景            |
-| ----------- | ---------------------------- | ------------------- |
-| `Default`   | 不加 flag                    | 人讀，tab 分隔      |
-| `JSON`      | `--json` / `-j` 或 `-f json` | 給 LLM、腳本消費    |
-| `--id-only` | `-i`                         | shell pipeline 串接 |
+| 格式 | 觸發 | 適用場景 |
+| --- | --- | --- |
+| `Default` | 不加 flag | 人讀，tab 分隔 |
+| `JSON` | `--json` / `-j` 或 `-f json` | 給 LLM、腳本消費 |
+| `--id-only` | `-i` | shell pipeline 串接 |
 
 `get` 用 `--format json`；其他多數指令用 `--json` / `-j`。
 
 ## Exit Codes
 
-| Code  | 意義                       |
-| ----- | -------------------------- |
-| `0`   | 成功                       |
-| `1`   | 錯誤（找不到、參數無效等） |
-| `130` | 使用者中斷（Ctrl+C）       |
+| Code | 意義 |
+| --- | --- |
+| `0` | 成功 |
+| `1` | 錯誤（找不到、參數無效等） |
+| `130` | 使用者中斷（Ctrl+C） |
 
 寫腳本時可用 `$?` 判斷。
 
 ## Common Mistakes
 
-| 錯誤                                          | 修正                                                       |
-| --------------------------------------------- | ---------------------------------------------------------- |
-| 用筆記「名稱」當參數呼叫 `edit` / `delete`    | 寫入類指令一律吃 `Note ID`，先 `notes list -t "..."` 取 ID |
-| `notes move p87`（缺 `-f`）                   | `-f, --folder` 是必填，補上目的資料夾                      |
-| 中文／含空白標題沒有 quote                    | 用雙引號包起來：`notes add "週報 W21"`                     |
-| 期待 `notes edit` 開編輯器但只給 `-b`/`-n`    | 非互動模式只覆寫；要互動加 `-e`                            |
-| 用了 `--markdown` 但 body 是純文字混 `#` 符號 | 不需要 markdown 解析時別加 `-m`，預設 plaintext 即可       |
-| 想刪附件                                      | 目前 CLI 不支援，需在 `Notes.app` UI 操作                  |
-| 想存取子資料夾筆記                            | 目前 CLI 僅支援頂層資料夾                                  |
-| 在密碼保護筆記上呼叫 `get`                    | 鎖定中無法讀取；需先在 `Notes.app` UI 解鎖                 |
-| 用 truncated ID（`.../ICNote/p87`）忘記引號   | shell 會解讀 `/`，務必整段加雙引號，或直接用 `p87`         |
+| 錯誤 | 修正 |
+| --- | --- |
+| 用筆記「名稱」當參數呼叫 `edit` / `delete` | 寫入類指令一律吃 `Note ID`，先 `notes list -t "..."` 取 ID |
+| `notes move Notes/p87`（缺 `-f`）| `-f, --folder` 是必填，補上目的資料夾 |
+| 中文／含空白標題沒有 quote | 用雙引號包起來：`notes add "週報 W21"` |
+| 期待 `notes edit` 開編輯器但只給 `-b`/`-n` | 非互動模式只覆寫；要互動加 `-e` |
+| 用了 `--markdown` 但 body 是純文字混 `#` 符號 | 不需要 markdown 解析時別加 `-m`，預設 plaintext 即可 |
+| 想刪附件 | 目前 CLI 不支援，需在 `Notes.app` UI 操作 |
+| 想存取子資料夾筆記 | 目前 CLI 僅支援頂層資料夾 |
+| 在密碼保護筆記上呼叫 `get` | 鎖定中無法讀取；需先在 `Notes.app` UI 解鎖 |
 
 ## Tips for Composing with Other Tools
 
