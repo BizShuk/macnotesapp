@@ -4,6 +4,7 @@ import base64
 import hashlib
 import pathlib
 import re
+from urllib.parse import urlparse
 
 import click
 
@@ -28,6 +29,15 @@ _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", "
 def _is_image_filename(name: str) -> bool:
     """Return True if filename looks like an image based on extension."""
     return any(name.lower().endswith(ext) for ext in _IMAGE_EXTENSIONS)
+
+
+def _url_domain(url: str) -> str:
+    """Extract clean domain name from URL for use as link text."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    domain = parsed.netloc or parsed.path
+    # Remove leading www.
+    return domain.lstrip("www.")
 
 
 def _add_trailing_spaces(text: str) -> str:
@@ -111,10 +121,11 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
 
         if is_url_attachment:
             # URL attachment — embed as image if URL ends with image extension
+            link_text = att.name if att.name else _url_domain(att_url)
             if _is_image_filename(att_url):
-                attachment_lines.append(f"![{att.name}]({att_url})")
+                attachment_lines.append(f"![{link_text}]({att_url})")
             else:
-                attachment_lines.append(f"[{att.name}]({att_url})")
+                attachment_lines.append(f"[{link_text}]({att_url})")
         else:
             # File attachment — save to attachments/ and reference locally
             att_filename = f"{short_id}_{att.name}"
