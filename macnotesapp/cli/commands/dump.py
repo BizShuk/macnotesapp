@@ -105,3 +105,69 @@ def dump_note(note_id, out_dir):
     folder_part = _safe_filename(note.folder or "Unknown")
     title = _safe_filename(note.name or "untitled")
     click.echo(f"Dumped '{note.name}' -> {out_path / (folder_part + '_' + title + '.md')}")
+
+
+@dump_group.command(name="folder")
+@click.option("--folder", "-f", required=True, help="Folder name to dump")
+@click.option("--out-dir", "-o", required=True, type=click.Path(file_okay=False, dir_okay=True), help="Output directory")
+def dump_folder(folder, out_dir):
+    """Dump all notes in a folder (searches all accounts).
+
+    Example: notes dump folder Archive --out-dir ./output
+    """
+    out_path = pathlib.Path(out_dir)
+    try:
+        out_path.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        click.echo(f"Error creating output directory: {e}", err=True)
+        raise click.Abort()
+
+    notesapp = macnotesapp.NotesApp()
+    accounts = notesapp.accounts
+
+    found = False
+    for account_name in accounts:
+        account = notesapp.account(account_name)
+        if folder not in account.folders:
+            continue
+        found = True
+        folder_obj = account.folder(folder)
+        for note in folder_obj.notes():
+            if note.password_protected:
+                click.echo(f"Warning: Skipping password-protected note '{note.name}'", err=True)
+                continue
+            _dump_note(note, out_path)
+            click.echo(f"Dumped '{note.name}' ({account_name}/{folder})")
+
+    if not found:
+        click.echo(f"Error: Folder '{folder}' not found in any account.", err=True)
+        raise click.Abort()
+
+
+@dump_group.command(name="all")
+@click.option("--out-dir", "-o", required=True, type=click.Path(file_okay=False, dir_okay=True), help="Output directory")
+def dump_all(out_dir):
+    """Dump all notes from all accounts and folders.
+
+    Example: notes dump all --out-dir ./output
+    """
+    out_path = pathlib.Path(out_dir)
+    try:
+        out_path.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        click.echo(f"Error creating output directory: {e}", err=True)
+        raise click.Abort()
+
+    notesapp = macnotesapp.NotesApp()
+    accounts = notesapp.accounts
+
+    for account_name in accounts:
+        account = notesapp.account(account_name)
+        for folder_name in account.folders:
+            folder_obj = account.folder(folder_name)
+            for note in folder_obj.notes():
+                if note.password_protected:
+                    click.echo(f"Warning: Skipping password-protected note '{note.name}'", err=True)
+                    continue
+                _dump_note(note, out_path)
+                click.echo(f"Dumped '{note.name}' ({account_name}/{folder_name})")
