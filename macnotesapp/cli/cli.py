@@ -363,8 +363,13 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
     )
 
     if id_only:
-        for nid in noteslist.id:
-            print(truncate_id(nid))
+        for i in range(len(noteslist)):
+            note_id = noteslist.id[i]
+            folder = noteslist.folder[i] or ""
+            folder_parts = folder.split("/")
+            folder_name = folder_parts[-1] if folder_parts else ""
+            display_id = format_display_id(note_id, folder_name)
+            print(display_id)
         return
 
     if json_:
@@ -378,7 +383,7 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
             folder_name_only = folder_parts[-1] if len(folder_parts) > 1 else ""
 
             notes_data.append({
-                "id": noteslist.id[i],
+                "id": format_display_id(noteslist.id[i], folder_name_only),
                 "name": noteslist.name[i],
                 "account": account,
                 "folder": folder_name_only,
@@ -400,12 +405,12 @@ def list_notes(name_filter, body_filter, text_filter, account_name, folder_name,
     print(header)
 
     for i in range(len(noteslist)):
-        note_id = truncate_id(noteslist.id[i])
         folder = noteslist.folder[i] or ""
         folder_parts = folder.split("/")
         account = folder_parts[0] if folder_parts else ""
         folder_name_only = folder_parts[-1] if len(folder_parts) > 1 else folder
         folder_display = f"{account}/{folder_name_only}" if account else folder_name_only
+        note_id = format_display_id(noteslist.id[i], folder_name_only)
         name = noteslist.name[i] or "---"
         mod_date = noteslist.modification_date[i].strftime("%Y-%m-%dT%H:%M") if noteslist.modification_date[i] else "---"
         pwd = "🔒" if noteslist.password_protected[i] else "-"
