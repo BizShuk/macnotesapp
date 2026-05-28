@@ -20,9 +20,11 @@ def attach_group():
 def attach_list(note_id, json_):
     """List attachments for a note.
 
-    Example: notes attach list x-coredata://.../IMAPNote/p87
+    Example: notes attach list Notes/p87
     """
+    from macnotesapp.cli.id_utils import resolve_note_id
     notesapp = macnotesapp.NotesApp()
+    note_id = resolve_note_id(note_id)
     matching_notes = notesapp.notes(id=[note_id])
     if not matching_notes:
         click.echo(f"Error: Note '{note_id}' not found.", err=True)
@@ -56,9 +58,11 @@ def attach_list(note_id, json_):
 def attach_add(note_id, file_path, json_):
     """Add attachment to a note.
 
-    Example: notes attach add x-coredata://.../IMAPNote/p87 /path/to/file.jpg
+    Example: notes attach add Notes/p87 /path/to/file.jpg
     """
+    from macnotesapp.cli.id_utils import resolve_note_id
     notesapp = macnotesapp.NotesApp()
+    note_id = resolve_note_id(note_id)
     matching_notes = notesapp.notes(id=[note_id])
     if not matching_notes:
         click.echo(f"Error: Note '{note_id}' not found.", err=True)
@@ -86,9 +90,11 @@ def attach_add(note_id, file_path, json_):
 def attach_save(note_id, attachment_id, out_dir):
     """Save attachment to a directory.
 
-    Example: notes attach save x-coredata://.../IMAPNote/p87 x-coredata://.../ICAttachment/p5631 --out-dir ./downloads
+    Example: notes attach save Notes/p87 x-coredata://.../ICAttachment/p5631 --out-dir ./downloads
     """
+    from macnotesapp.cli.id_utils import resolve_note_id
     notesapp = macnotesapp.NotesApp()
+    note_id = resolve_note_id(note_id)
     matching_notes = notesapp.notes(id=[note_id])
     if not matching_notes:
         click.echo(f"Error: Note '{note_id}' not found.", err=True)

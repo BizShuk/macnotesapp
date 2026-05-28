@@ -39,16 +39,6 @@ uv sync
 uv run notes --help
 ```
 
-### Install via Homebrew (Apple Silicon)
-
-```bash
-brew tap bizshuk/macnotesapp https://github.com/bizshuk/macnotesapp
-brew update
-brew install macnotesapp
-```
-
-**Note**: Currently tested on MacOS 10.15.7/Catalina and 13.1/Ventura.
-
 ## ID-First CLI Design
 
 This fork implements **ID-first architecture** — all write operations use Note ID instead of name to avoid ambiguity.
@@ -77,11 +67,11 @@ notes edit p87 --name "新標題"
 
 ### Output Formats
 
-| Format | Use Case |
-| --- | --- |
-| Default | Human-readable, tab-separated |
-| --json | LLM workflows, scripting |
-| --id-only | Shell pipelines |
+| Format    | Use Case                      |
+| --------- | ----------------------------- |
+| Default   | Human-readable, tab-separated |
+| --json    | LLM workflows, scripting      |
+| --id-only | Shell pipelines               |
 
 ### Exit Codes
 
@@ -106,6 +96,7 @@ cog.out(
     "```\n{}\n```".format(help)
 )
 ]]] -->
+
 ```
 Usage: notes [OPTIONS] COMMAND [ARGS]...
 
@@ -132,6 +123,7 @@ Commands:
   selected  Get the note currently selected in Notes.app UI.
 
 ```
+
 <!-- [[[end]]] -->
 
 For full command reference, see [README.cli.md](./README.cli.md).
@@ -146,6 +138,7 @@ cog.out(
     "```python\n{}\n```".format(example)
 )
 ]]] -->
+
 ```python
 """Example code for working with macnotesapp"""
 
@@ -194,6 +187,7 @@ note_names = noteslist.name
 print(note_names)
 
 ```
+
 <!-- [[[end]]] -->
 
 ## See Also
