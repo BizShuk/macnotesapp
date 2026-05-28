@@ -267,18 +267,20 @@ def format_display_id(note_id: str, folder: str = "") -> str:
         return note_id
 
 
-def resolve_note_id(note_id: str) -> str:
-    """Resolve partial note ID to full ID.
+def resolve_note_id(note_id: str, notes_app: "NotesApp" = None) -> str:
+    """Resolve note ID to full x-coredata:// ID.
 
-    If note_id is already a full x-coredata:// ID, return as-is.
-    If note_id is partial (e.g., 'p87' or 'IMAPNote/p87'), search all notes
-    and return the full ID if exactly one match is found.
+    Handles three formats:
+    - x-coredata://.../IMAPNote/p87 - return as-is
+    - FOLDER/short_id (e.g., 'Notes/p87') - search within folder
+    - short_id (e.g., 'p87') - search all notes (backward compat)
 
     Args:
-        note_id: Full or partial note ID
+        note_id: Full ID, FOLDER/short_id, or partial ID
+        notes_app: NotesApp instance (optional, creates one if None)
 
     Returns:
-        Full note ID
+        Full x-coredata:// note ID
 
     Raises:
         click.ClickException if no match or multiple matches found
@@ -287,20 +289,51 @@ def resolve_note_id(note_id: str) -> str:
     if note_id.startswith("x-coredata://"):
         return note_id
 
-    # Otherwise, search for notes ending with the partial ID
-    notes_app = macnotesapp.NotesApp()
-    all_notes = notes_app.notes()
+    # Parse FOLDER/short_id format
+    folder_name = None
+    partial_id = note_id
 
-    # Find notes where the ID ends with the given partial
-    matches = []
-    for note in all_notes:
-        if note.id.endswith(f"/{note_id}") or note.id.endswith(note_id):
-            matches.append(note.id)
+    if "/" in note_id and not note_id.startswith("x-coredata://"):
+        parts = note_id.rsplit("/", 1)
+        folder_name, partial_id = parts[0], parts[1]
+
+    # Initialize NotesApp if not provided
+    if notes_app is None:
+        notes_app = macnotesapp.NotesApp()
+
+    # Search strategy: folder-scoped or global
+    if folder_name:
+        # Folder-scoped search: find note in specific folder
+        account_name = None
+        # Find which account contains this folder
+        for acc_name in notes_app.accounts:
+            account = notes_app.account(acc_name)
+            if folder_name in account.folders:
+                account_name = acc_name
+                break
+
+        if not account_name:
+            raise click.ClickException(f"Folder '{folder_name}' not found in any account")
+
+        account = notes_app.account(account_name)
+        folder_obj = account.folder_for_name(folder_name)
+        folder_notes = folder_obj.notes()
+
+        matches = [note.id for note in folder_notes
+                   if note.id.endswith(f"/{partial_id}") or note.id.endswith(partial_id)]
+    else:
+        # Global search (backward compat for plain 'p87')
+        all_notes = notes_app.notes()
+        matches = [note.id for note in all_notes
+                   if note.id.endswith(f"/{partial_id}") or note.id.endswith(partial_id)]
 
     if len(matches) == 0:
         raise click.ClickException(f"No note found matching '{note_id}'")
     elif len(matches) > 1:
-        raise click.ClickException(f"Multiple notes match '{note_id}': {len(matches)} found. Use full ID.")
+        raise click.ClickException(
+            f"Multiple notes match '{note_id}': {len(matches)} found. "
+            f"Use full ID or FOLDER/short_id format."
+        )
 
     return matches[0]
 
