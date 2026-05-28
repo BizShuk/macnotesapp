@@ -64,6 +64,9 @@ notes --version
 | `notes selected` | 取得目前選取的筆記 | `notes selected -i` |
 | `notes mkdir NAME` | 建資料夾 | `notes mkdir Archive` |
 | `notes rmdir NAME` | 刪資料夾 | `notes rmdir Archive -y` |
+| `notes dump ID -o DIR` | 匯出單篇 Markdown | `notes dump Notes/p87 -o ./out` |
+| `notes dump --folder F -o DIR` | 匯出資料夾 | `notes dump --folder Archive -o ./out` |
+| `notes dump --all -o DIR` | 匯出全部 | `notes dump --all -o ./out` |
 | `notes attach add ID FILE` | 新增附件 | `notes attach add Notes/p87 ./img.jpg` |
 | `notes attach list ID` | 列出附件 | `notes attach list Notes/p87` |
 | `notes attach save ID AID -o DIR` | 下載附件 | `notes attach save Notes/p87 p5631 -o ./out` |
@@ -115,6 +118,19 @@ notes accounts --json
 # 取得選取筆記的 ID，丟回給其他指令
 ID=$(notes selected --id-only)
 notes get "$ID"
+```
+
+### 工作流 5：匯出筆記（備份）
+
+```bash
+# 匯出單篇到 ./backup
+notes dump Notes/p87 -o ./backup
+
+# 匯出整個資料夾
+notes dump --folder Archive -o ./backup
+
+# 匯出所有筆記
+notes dump --all -o ./backup
 ```
 
 ## Per-Command Details
@@ -227,6 +243,17 @@ notes mkdir "Archive" -a iCloud      # 指定帳號
 notes rmdir "Archive"                # 跳確認
 notes rmdir "Archive" -y -a iCloud
 ```
+
+### `notes dump` — 匯出筆記（含 Markdown 與附件）
+
+```bash
+notes dump Notes/p87 -o ./out                    # 匯出單篇
+notes dump --folder Archive -o ./out             # 匯出整個資料夾（搜尋所有帳號）
+notes dump --all -o ./out                        # 匯出所有筆記
+```
+
+輸出格式：`{FOLDER}_{TITLE}.md`，附件放在 `attachments/` 目錄。
+密碼保護的筆記會顯示警告並跳過。
 
 ### `notes attach` — 附件
 
