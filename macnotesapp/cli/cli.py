@@ -757,12 +757,15 @@ def selected_notes(json_, id_only):
 
     if id_only:
         for note in notes:
-            print(note.id)
+            folder_name = note.folder.split("/")[-1] if note.folder else ""
+            print(format_display_id(note.id, folder_name))
     elif json_:
         import json
         notes_list = []
         for note in notes:
+            folder_name = note.folder.split("/")[-1] if note.folder else ""
             note_data = note.asdict()
+            note_data["id"] = format_display_id(note_data["id"], folder_name)
             note_data["creation_date"] = note_data["creation_date"].isoformat()
             note_data["modification_date"] = note_data["modification_date"].isoformat()
             notes_list.append(note_data)
@@ -770,7 +773,8 @@ def selected_notes(json_, id_only):
     else:
         # Default: human-readable, one line per note
         for note in notes:
-            print(f"{note.id}\t{note.account}/{note.folder}\t{note.name}")
+            folder_name = note.folder.split("/")[-1] if note.folder else ""
+            print(f"{format_display_id(note.id, folder_name)}\t{note.account}/{note.folder}\t{note.name}")
 
 
 # Click CLI object & context settings
