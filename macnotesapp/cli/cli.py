@@ -304,23 +304,19 @@ def resolve_note_id(note_id: str, notes_app: "NotesApp" = None) -> str:
     # Search strategy: folder-scoped or global
     if folder_name:
         # Folder-scoped search: find note in specific folder
-        account_name = None
-        # Find which account contains this folder
+        # Must check ALL accounts as folder name may not be unique
+        # (e.g., "Notes" exists in both Google and iCloud)
+        matches = []
         for acc_name in notes_app.accounts:
             account = notes_app.account(acc_name)
             if folder_name in account.folders:
-                account_name = acc_name
-                break
-
-        if not account_name:
-            raise click.ClickException(f"Folder '{folder_name}' not found in any account")
-
-        account = notes_app.account(account_name)
-        folder_obj = account.folder_for_name(folder_name)
-        folder_notes = folder_obj.notes()
-
-        matches = [note.id for note in folder_notes
-                   if note.id.endswith(f"/{partial_id}") or note.id.endswith(partial_id)]
+                folder_obj = account.folder_for_name(folder_name)
+                folder_notes = folder_obj.notes()
+                matches.extend([
+                    note.id for note in folder_notes
+                    if note.id.endswith(f"/{partial_id}") or note.id.endswith(partial_id)
+                ])
+                # Continue checking other accounts - same folder name may exist in multiple accounts
     else:
         # Global search (backward compat for plain 'p87')
         all_notes = notes_app.notes()
