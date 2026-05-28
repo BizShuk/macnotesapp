@@ -1,6 +1,9 @@
 """dump command for macnotesapp - export notes to Markdown with attachments"""
 
+import base64
+import hashlib
 import pathlib
+import re
 
 import click
 
@@ -35,6 +38,48 @@ def _add_trailing_spaces(text: str) -> str:
     return "".join(f"{line}  \n" for line in lines)
 
 
+_IMAGE_MIME_TO_EXT = {
+    "png": "png", "jpeg": "jpg", "gif": "gif", "webp": "webp", "bmp": "bmp"
+}
+
+
+def _extract_body_images(html: str, attachments_dir: pathlib.Path) -> tuple[str, list[str]]:
+    """Extract base64 images from HTML, save to attachments/, replace src with local path.
+
+    Returns:
+        (modified_html, list of saved filenames)
+    """
+    pattern = r'<img([^>]*?)src="data:image/([^;]+);base64,([^"]+)"([^>]*?)(/?>)'
+    saved = []
+
+    def replace(match):
+        attrs_before = match.group(1)
+        mime = match.group(2)
+        b64_data = match.group(3)
+        attrs_after = match.group(4)
+        closing = match.group(5)
+
+        try:
+            image_data = base64.b64decode(b64_data)
+        except Exception:
+            return match.group(0)  # keep original on decode failure
+
+        data_hash = hashlib.sha256(image_data).hexdigest()[:16]
+        ext = _IMAGE_MIME_TO_EXT.get(mime.lower(), "png")
+        filename = f"body_{data_hash}.{ext}"
+        filepath = attachments_dir / filename
+
+        attachments_dir.mkdir(parents=True, exist_ok=True)
+        with open(filepath, "wb") as f:
+            f.write(image_data)
+        saved.append(filename)
+
+        return f'<img{attrs_before}src="attachments/{filename}"{attrs_after}{closing}>'
+
+    modified = re.sub(pattern, replace, html)
+    return modified, saved
+
+
 def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     """Dump a single note to a .md file.
 
@@ -50,12 +95,15 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     md_filename = f"{folder_part}_{title}.md"
     md_path = out_dir / md_filename
 
-    # Convert body HTML → Markdown using markdownify
-    body_md = html2md(note.body)
+    # Extract and save base64 body images first
+    body_with_local_paths, body_images = _extract_body_images(
+        note.body, out_dir / "attachments"
+    )
+    body_md = html2md(body_with_local_paths)
 
     # Build attachment section
     attachment_lines = []
-    saved_attachments = []
+    saved_attachments = list(body_images)
 
     for att in note.attachments:
         att_url = att.URL
