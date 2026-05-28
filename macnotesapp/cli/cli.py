@@ -33,6 +33,7 @@ from .cli_param_types import URLType
 from .readable import get_readable_html
 from .id_utils import resolve_note_id, format_display_id, truncate_id
 from .commands.attach import attach_group
+from .commands.dump import dump_group
 from .commands.app import app_group
 
 # extra features to support for Markdown to HTML conversion with markdown2
@@ -683,7 +684,7 @@ def cli_main(ctx, debug):
 # add the commands to the main group
 for command in [accounts, add_note, config, list_notes,
                 rename_note, delete_note, edit_note, move_note, make_folder, remove_folder,
-                get_note, selected_notes, attach_group, app_group]:
+                get_note, selected_notes, attach_group, app_group, dump_group]:
     cli_main.add_command(command)
 
 
