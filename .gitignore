@@ -24,3 +24,4 @@ pyvenv.cfg
 site/
 .envrc
 .claude/settings.local.json
+tmp
