@@ -85,6 +85,63 @@ _IMAGE_MIME_TO_EXT = {
 }
 
 
+def _convert_tt_blocks_to_pre(html: str) -> str:
+    """Convert consecutive <div><tt>...</tt></div> blocks to <pre> blocks.
+
+    Apple Notes uses <tt> (teletype) for monostyled/code blocks.
+    Markdownify doesn't handle <tt> as code blocks, so we pre-convert
+    consecutive <tt> blocks to <pre> which markdownify handles correctly.
+    """
+    # Replace <br> within tt blocks with newlines for proper line breaks
+    html = re.sub(r'<br\s*/?>', '\n', html)
+
+    # Find all <div><tt>...</tt></div> blocks
+    tt_pattern = r'<div><tt>(.*?)</tt></div>'
+    matches = list(re.finditer(tt_pattern, html, re.DOTALL))
+
+    if not matches:
+        return html
+
+    # Group consecutive matches (with only whitespace/newlines between)
+    groups = []
+    current_group = [matches[0]]
+
+    for i in range(1, len(matches)):
+        prev_end = matches[i - 1].end()
+        curr_start = matches[i].start()
+        between = html[prev_end:curr_start]
+        if between.strip() == '' or between.strip() == '\n':
+            current_group.append(matches[i])
+        else:
+            groups.append(current_group)
+            current_group = [matches[i]]
+    groups.append(current_group)
+
+    # Replace each group with a <pre> block
+    result = html
+    offset = 0
+    for group in groups:
+        contents = []
+        for m in group:
+            content = m.group(1)
+            # Decode common HTML entities
+            content = content.replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"').replace('&amp;', '&')
+            contents.append(content.strip())
+
+        combined = '\n'.join(contents)
+        replacement = f'<pre>{combined}</pre>'
+
+        first_match = group[0]
+        last_match = group[-1]
+        start = first_match.start() + offset
+        end = last_match.end() + offset
+
+        result = result[:start] + replacement + result[end:]
+        offset += len(replacement) - (end - start)
+
+    return result
+
+
 def _extract_body_images(html: str, attachments_dir: pathlib.Path) -> tuple[str, list[str]]:
     """Extract base64 images from HTML, save to attachments/, replace src with local path.
 
@@ -141,7 +198,9 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     body_with_local_paths, body_images = _extract_body_images(
         note.body, out_dir / "attachments"
     )
-    body_md = html2md(body_with_local_paths)
+    # Convert <tt> (monostyled) blocks to <pre> for proper fenced code block output
+    body_with_pre = _convert_tt_blocks_to_pre(body_with_local_paths)
+    body_md = html2md(body_with_pre)
 
     # Build URL → link_text map from URL attachments (for body link text unification)
     url_to_linktext = {}
