@@ -72,6 +72,41 @@ def _url_domain(url: str) -> str:
     return domain.lstrip("www.")
 
 
+def _preprocess_empty_anchors(html: str) -> str:
+    """Fill empty anchor tags with their URL as link text before markdownify.
+
+    Handles: <a href="URL"></a> → <a href="URL">URL</a>
+    Also handles: <a href="URL" title="..."></a> → <a href="URL" title="...">URL</a>
+    This prevents markdownify from returning empty string and losing the URL.
+    """
+    # Match <a href="..." ...options...></a> with no content between tags
+    def fill_empty_anchor(match):
+        href = match.group(1)
+        return f'<a href="{href}">{href}</a>'
+
+    # Pattern: <a with href, optional other attrs, closing >, empty content, </a>
+    return re.sub(r'<a\s+href="([^"]+)"[^>]*>\s*</a>', fill_empty_anchor, html)
+
+
+def _postprocess_empty_md_links(body_md: str) -> str:
+    """Recover URLs from empty markdown links like [](#url) that lost their text.
+
+    Scans for pattern [](#URL) or [](URL) and replaces with [URL](URL).
+    Only handles the specific case where text is empty or whitespace.
+    """
+    # Match [](#url) or [](url) - empty text, URL-only links
+    def recover_link(match):
+        url = match.group(1)
+        return f'[{url}]({url})'
+
+    # Match [](url) with empty text
+    body_md = re.sub(r'\[\]\((https?://[^)]+)\)', recover_link, body_md)
+    # Match [#text](#url) where text is empty/whitespace after strip
+    body_md = re.sub(r'\[([^\]]*?)\]\((https?://[^)]+)\)', lambda m: m.group(0) if m.group(1).strip() else recover_link(m), body_md)
+
+    return body_md
+
+
 def _add_trailing_spaces(text: str) -> str:
     """Add two trailing spaces to each non-empty line for proper markdown line breaks."""
     lines = text.splitlines()
@@ -200,7 +235,11 @@ def _dump_note(note, out_dir: pathlib.Path) -> list[str]:
     )
     # Convert <tt> (monostyled) blocks to <pre> for proper fenced code block output
     body_with_pre = _convert_tt_blocks_to_pre(body_with_local_paths)
-    body_md = html2md(body_with_pre)
+    # Fill empty anchors before markdownify to preserve URLs (primary fix)
+    body_with_filled = _preprocess_empty_anchors(body_with_pre)
+    body_md = html2md(body_with_filled)
+    # Recover any URLs lost to empty anchor case (fallback post-process)
+    body_md = _postprocess_empty_md_links(body_md)
 
     # Build URL → link_text map from URL attachments (for body link text unification)
     url_to_linktext = {}
