@@ -5,27 +5,11 @@
 
 ## 已知限制 (Known Limitations)
 
-來自 `README.md` 的 Known Issues 節，逐項轉為可追蹤項目：
-
-- [ ] 密碼保護筆記不支援：已解鎖者可存取，鎖定者不行。確認是 Notes.app 的
-      硬限制還是可透過 AppleScript 繞過。
-- [ ] 含標籤 (`#tagname`) 的筆記可讀，但標籤會從內文被剝除。
-- [ ] 無法新增標籤；以 macnotesapp 手動加入會變成純文字。
 - [ ] 只能存取`頂層資料夾`內的筆記（上游 issue #4）。巢狀資料夾支援是
       最常被使用者碰到的限制。
 
 ## 程式碼債 (Code Debt)
 
-程式碼中既有的 TODO 註解：
-
 - [ ] `macnotesapp_applescript.py:5` — AppleScript 目前靠人工從
       `.applescript` 複製貼上成 Python 字串。應改為建置期產生或執行期讀取，
       否則兩份必然漂移。（`macemailapp` 有相同問題，可一併處理）
-- [ ] `cli/click_rich_echo.py:25` — 模組層全域變數應改為 class。
-- [ ] `notesapp.py:100` 與 `notesapp.py:275` — 兩處回傳 list 的方法
-      考慮改為 generator，避免大量筆記時一次載入。
-
-## 測試 (Testing)
-
-- [ ] 26 個原始碼檔僅對應 3 個測試檔。ID 解析（`id_utils.py` 的部分 ID →
-      完整 ID）是 ID-first 設計的核心，應優先補測試。
