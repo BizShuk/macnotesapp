@@ -1,15 +1,13 @@
 # TODO
 
-> 本清單由 2026-08-10 的 submodule 一致性稽核建立，來源為 `README.md` 的
-> Known Issues 節與程式碼中既有的 TODO 註解。`優先序尚未排定`。
+> 本清單由 2026-08-10 的 submodule 一致性稽核建立，來源為 `README.md` 的 Known Issues 節與程式碼中既有的 TODO 註解。
 
-## 已知限制 (Known Limitations)
+## 筆記管理 (Notes Management)
 
-- [ ] 只能存取`頂層資料夾`內的筆記（上游 issue #4）。巢狀資料夾支援是
-      最常被使用者碰到的限制。
+- [ ] [P1] [feature] 只能存取`頂層資料夾`內的筆記（上游 issue #4）。巢狀資料夾支援是最常被使用者碰到的限制。
 
-## 程式碼債 (Code Debt)
+## Architecture
 
-- [ ] `macnotesapp_applescript.py:5` — AppleScript 目前靠人工從
-      `.applescript` 複製貼上成 Python 字串。應改為建置期產生或執行期讀取，
-      否則兩份必然漂移。（`macemailapp` 有相同問題，可一併處理）
+- [ ] [P1] [refactor] `macnotesapp_applescript.py:5` — AppleScript 目前靠人工從 `.applescript` 複製貼上成 Python 字串。應改為建置期產生或執行期讀取，否則兩份必然漂移。（`macemailapp` 有相同問題，可一併處理）
+
+## Archive
