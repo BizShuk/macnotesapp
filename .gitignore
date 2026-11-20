@@ -25,3 +25,4 @@ site/
 .envrc
 .claude/settings.local.json
 tmp
+**/node_modules/
